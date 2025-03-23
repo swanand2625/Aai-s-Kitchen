@@ -19,6 +19,7 @@ import { Buffer } from 'buffer';
 export default function AddFood() {
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
+  const [veg_type, setvegType] = useState('');
   const [category, setCategory] = useState('main');
   const [image, setImage] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -79,6 +80,7 @@ export default function AddFood() {
           category,
           price: parseFloat(price),
           image_url: imageUrl,
+          veg_type
         },
       ]);
 
@@ -88,6 +90,7 @@ export default function AddFood() {
       setName('');
       setPrice('');
       setCategory('main');
+      setCategory('veg');
       setImage(null);
     } catch (error: any) {
       console.error('Upload Error:', error);
@@ -127,6 +130,16 @@ export default function AddFood() {
           <Picker.Item label="Dessert" value="dessert" />
           <Picker.Item label="Drink" value="drink" />
           <Picker.Item label="Snack" value="snack" />
+        </Picker>
+      </View>
+
+      <View style={styles.pickerContainer}>
+        <Picker
+          selectedValue={veg_type}
+          onValueChange={(itemValue) => setvegType(itemValue)}
+        >
+          <Picker.Item label="Veg" value="veg" />
+          <Picker.Item label="Nonveg" value="nonveg" />  
         </Picker>
       </View>
 

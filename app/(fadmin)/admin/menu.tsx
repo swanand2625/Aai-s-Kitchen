@@ -1,17 +1,15 @@
 import { useNavigation } from 'expo-router';
-import { View, Text, FlatList, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import React, { useLayoutEffect } from 'react';
-import { Link } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
 
-const dummyData = {
-  breakfast: [],
-  lunch: [],
-  dinner: [],
-};
+const mealCategories = ['Breakfast', 'Lunch', 'Dinner'];
 
 export default function MenuScreen() {
   const navigation = useNavigation();
+  const router = useRouter();
+  const meal=''
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -32,62 +30,55 @@ export default function MenuScreen() {
     });
   }, [navigation]);
 
+  const handlePress = (mealType: string) => {
+    router.push(`/(fadmin)/admin/display-items?type=${mealType.toLowerCase()}` as any);
+
+  };
+
   return (
     <View style={styles.container}>
-      <MealSection title="Breakfast" data={dummyData.breakfast} />
-      <MealSection title="Lunch" data={dummyData.lunch} />
-      <MealSection title="Dinner" data={dummyData.dinner} />
+      {mealCategories.map((meal) => (
+        <Pressable
+          key={meal}
+          style={({ pressed }) => [
+            styles.mealCard,
+            { opacity: pressed ? 0.6 : 1 },
+          ]}
+          onPress={() => handlePress(meal)}
+        >
+          <Text style={styles.mealText}>{meal}</Text>
+        </Pressable>
+      ))}
     </View>
   );
 }
 
-function MealSection({ title, data }: { title: string; data: any[] }) {
-  return (
-    <View style={styles.mealSection}>
-      <Text style={styles.mealTitle}>{title}</Text>
-      <FlatList
-        horizontal
-        data={data}
-        keyExtractor={(_, index) => `${title}-${index}`}
-        renderItem={({ item }) => (
-          <View style={styles.foodCard}>
-            <Text style={styles.foodText}>{item.name || 'Item'}</Text>
-          </View>
-        )}
-        showsHorizontalScrollIndicator={false}
-      />
-    </View>
-  );
-}
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#fff',
     paddingHorizontal: 16,
     paddingTop: 24,
   },
   headerIcon: {
     marginRight: 16,
   },
-  mealSection: {
-    marginBottom: 24,
-  },
-  mealTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  foodCard: {
-    marginRight: 12,
-    backgroundColor: '#e5e7eb', 
-    padding: 12,
-    borderRadius: 12,
-    width: 128,
-    height: 128,
+  mealCard: {
+    backgroundColor: '#fbbf24', // Warm yellow shade
+    padding: 24,
+    borderRadius: 16,
+    marginBottom: 20,
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
   },
-  foodText: {
-    textAlign: 'center',
+  mealText: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#111827',
   },
 });
