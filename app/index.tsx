@@ -1,24 +1,33 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router'; 
-
+import { Redirect } from 'expo-router';
 export default function HomeScreen() {
+  //return <Redirect href="D:\C Drive\Desktop\Aais Kitchen\mess\app\(auth)" />;
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Welcome to Aai's Kitchen</Text>
 
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => router.push('/(user)')}
-      >
-        <Text style={styles.buttonText}>User Dashboard</Text>
-      </TouchableOpacity>
+<TouchableOpacity
+  style={styles.button}
+  onPress={() => router.push('/(user)')}
+>
+  <Text style={styles.buttonText}>User Dashboard</Text>
+</TouchableOpacity>
 
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => router.push('/(fadmin)')}
-      >
-        <Text style={styles.buttonText}>Franchise Admin Dashboard</Text>
-      </TouchableOpacity>
+<TouchableOpacity
+  style={styles.button}
+  onPress={() => router.push('/(fadmin)')}
+>
+  <Text style={styles.buttonText}>Franchise Admin Dashboard</Text>
+</TouchableOpacity>
+
+<TouchableOpacity
+  style={styles.button}
+  onPress={() => router.push('/(auth)')}
+>
+  <Text style={styles.buttonText}>Auth</Text>
+</TouchableOpacity>
+      
     </View>
   );
 }
@@ -57,3 +66,18 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
+/* <Text style={styles.title}>Welcome to Aai's Kitchen</Text>
+
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => router.push('/(user)')}
+      >
+        <Text style={styles.buttonText}>User Dashboard</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => router.push('/(fadmin)')}
+      >
+        <Text style={styles.buttonText}>Franchise Admin Dashboard</Text>
+      </TouchableOpacity> */
