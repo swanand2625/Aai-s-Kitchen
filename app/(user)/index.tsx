@@ -25,6 +25,11 @@ const dashboardItems = [
     icon: <MaterialIcons name="receipt" size={40} color="#FF6363" />,
     navigateTo: 'member/bill',
   },
+  {
+    title: 'Join Mess',
+    icon: <MaterialIcons name="restaurant" size={40} color="#FF6363" />,
+    navigateTo: 'member/join_mess',
+  },
 ];
 
 

@@ -4,44 +4,56 @@ import Button from '@/components/Button';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/providers/useAuthStore';
 import { router } from 'expo-router';
+import AdminAddressInput from '@/components/autocom';
 
 export default function AdminDetailsScreen() {
-  const [name, setName] = useState('');
-  const [address, setAddress] = useState('');
+  const [franchise, setFranchise] = useState<{
+    name: string;
+    address: string;
+    latitude: number | null;
+    longitude: number | null;
+  }>({
+    name: '',
+    address: '',
+    latitude: null,
+    longitude: null,
+  });
+
   const [contact, setContact] = useState('');
+
   const { userId, setUser } = useAuthStore();
 
   const handleSubmit = async () => {
-    if (!name || !contact) {
-      Alert.alert('Missing Info', 'Please fill in name and contact');
+    const { name, address, latitude, longitude } = franchise;
+
+    if (!name || !contact || !address) {
+      Alert.alert('Missing Info', 'Please fill in all required fields');
       return;
     }
 
     try {
-      // 1. Insert into franchises
-      const { data: franchise, error: franchiseError } = await supabase
+      // Insert into franchises
+      const { data: insertedFranchise, error: franchiseError } = await supabase
         .from('franchises')
-        .insert([{ name, address, contact }])
+        .insert([{ name, address, contact, latitude, longitude }])
         .select()
         .single();
 
-      if (franchiseError || !franchise) {
+      if (franchiseError || !insertedFranchise) {
         throw franchiseError;
       }
 
-      // 2. Link to franchise_admins
+      // Link to franchise_admins
       const { error: linkError } = await supabase
         .from('franchise_admins')
-        .insert([{ user_id: userId, franchise_id: franchise.id }]);
+        .insert([{ user_id: userId, franchise_id: insertedFranchise.id }]);
 
       if (linkError) {
         throw linkError;
       }
 
-      // 3. Update auth store
-      setUser(userId!, 'franchise_admin', franchise.id);
-
-      // 4. Redirect to admin dashboard
+      // Update auth store and redirect
+      setUser(userId!, 'franchise_admin', insertedFranchise.id);
       router.replace('/(fadmin)');
     } catch (err: any) {
       Alert.alert('Error', err.message || 'Something went wrong');
@@ -51,10 +63,39 @@ export default function AdminDetailsScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Franchise Details</Text>
-      <TextInput placeholder="Franchise Name" value={name} onChangeText={setName} style={styles.input} />
-      <TextInput placeholder="Address" value={address} onChangeText={setAddress} style={styles.input} />
-      <TextInput placeholder="Contact" value={contact} onChangeText={setContact} style={styles.input} />
-      <Button text="Submit" onPress={handleSubmit} />
+
+      <TextInput
+        placeholder="Franchise Name"
+        value={franchise.name}
+        onChangeText={(text) => setFranchise({ ...franchise, name: text })}
+        style={styles.input}
+      />
+
+      <View style={styles.addressInputWrapper}>
+        <AdminAddressInput
+          onSelectAddress={(locationData: { address: string; latitude: number; longitude: number }) => {
+            setFranchise((prev) => ({
+              ...prev,
+              address: locationData.address,
+              latitude: locationData.latitude,
+              longitude: locationData.longitude,
+            }));
+          }}
+        />
+      </View>
+
+      {/* Contact input moved to the bottom */}
+      <View style={styles.footer}>
+        <TextInput
+          placeholder="Contact"
+          value={contact}
+          onChangeText={setContact}
+          style={styles.input}
+          keyboardType="phone-pad"
+        />
+
+        <Button text="Submit" onPress={handleSubmit} />
+      </View>
     </View>
   );
 }
@@ -63,7 +104,6 @@ const styles = StyleSheet.create({
   container: {
     padding: 24,
     flex: 1,
-    justifyContent: 'center',
     backgroundColor: '#fff',
   },
   title: {
@@ -77,6 +117,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 12,
     borderRadius: 8,
-    marginBottom: 12,
+    marginBottom: 16,
+  },
+  addressInputWrapper: {
+    marginBottom: 16,
+    zIndex: 2,
+  },
+  footer: {
+    marginTop: 'auto', // Pushes Contact and Submit to the bottom
   },
 });
