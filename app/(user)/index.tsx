@@ -1,9 +1,11 @@
-import { FlatList, StyleSheet, TouchableOpacity } from 'react-native';
-
-import EditScreenInfo from '@/components/EditScreenInfo';
-import { Text, View } from '@/components/Themed';
+import React, { useEffect, useState } from 'react'; 
+import { FlatList, StyleSheet, TouchableOpacity, View, Text, Alert } from 'react-native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from 'expo-router';
+import { supabase } from '@/lib/supabase';
+import { useAuthStore } from '@/providers/useAuthStore';
+import dayjs from 'dayjs';
+
 const dashboardItems = [
   {
     title: 'Profile',
@@ -32,18 +34,75 @@ const dashboardItems = [
   },
 ];
 
-
-
 export default function TabOneScreen() {
   const navigation = useNavigation();
+  const { userId } = useAuthStore();
+  const [franchise, setFranchise] = useState<Franchise | null>(null);
+  const [planStart, setPlanStart] = useState<string | null>(null);
+  const [planEnd, setPlanEnd] = useState<string | null>(null);
 
-  const renderItem = ({ item }: any) => (
+  type DashboardItem = {
+    title: string;
+    icon: React.ReactNode;
+    navigateTo: string;
+  };
+
+  type Franchise = {
+    name: string;
+    address: string;
+    contact: string;
+  };
+
+  useEffect(() => {
+    const fetchFranchise = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('mess_members')
+          .select('franchise_id, plan_start, plan_end')
+          .eq('user_id', userId)
+          .single();
+
+        if (error || !data) {
+          Alert.alert('Error', 'No franchise found for this user');
+          return;
+        }
+
+        setPlanStart(data.plan_start);
+        setPlanEnd(data.plan_end);
+
+        const { data: franchiseData, error: franchiseError } = await supabase
+          .from('franchises')
+          .select('*')
+          .eq('id', data.franchise_id)
+          .single();
+
+        if (franchiseError || !franchiseData) {
+          Alert.alert('Error', 'No franchise details found');
+          return;
+        }
+
+        setFranchise(franchiseData);
+      } catch (err) {
+        Alert.alert('Error', 'Failed to fetch franchise data');
+      }
+    };
+
+    if (userId) {
+      fetchFranchise();
+    }
+  }, [userId]);
+
+  const isPlanExpired = planEnd ? dayjs().isAfter(dayjs(planEnd)) : true;
+  const hasPlan = planStart && planEnd && !isPlanExpired;
+
+  const handleBuyPlan = () => {
+    navigation.navigate('member/buy_plan' as never);
+  };
+
+  const renderItem = ({ item }: { item: DashboardItem }) => (
     <TouchableOpacity
       style={styles.card}
-      onPress={() => {
-        // Navigate to appropriate screen
-        navigation.navigate(item.navigateTo as never);
-      }}
+      onPress={() => navigation.navigate(item.navigateTo as never)}
     >
       <View style={styles.icon}>{item.icon}</View>
       <Text style={styles.cardText}>{item.title}</Text>
@@ -53,10 +112,30 @@ export default function TabOneScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.header}>Mess Member Dashboard</Text>
+      {franchise && (
+        <View style={styles.franchiseInfo}>
+          <Text style={styles.franchiseTitle}>{franchise.name}</Text>
+          <Text style={styles.franchiseDetails}>{franchise.address}</Text>
+          <Text style={styles.franchiseDetails}>{franchise.contact}</Text>
+
+          {!hasPlan && (
+            <>
+              {isPlanExpired && (
+                <Text style={{ color: 'red', marginTop: 10 }}>
+                  Your plan has expired.
+                </Text>
+              )}
+              <TouchableOpacity style={styles.buyPlanButton} onPress={handleBuyPlan}>
+                <Text style={styles.buyPlanButtonText}>Buy Plan</Text>
+              </TouchableOpacity>
+            </>
+          )}
+        </View>
+      )}
       <FlatList
         data={dashboardItems}
         renderItem={renderItem}
-        keyExtractor={(item: { title: any; }) => item.title}
+        keyExtractor={(item) => item.title}
         numColumns={2}
         contentContainerStyle={styles.grid}
       />
@@ -77,6 +156,37 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     color: '#333',
     alignSelf: 'center',
+  },
+  franchiseInfo: {
+    backgroundColor: '#fff',
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 20,
+    alignItems: 'center',
+    width: '100%',
+  },
+  franchiseTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
+  },
+  franchiseDetails: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 4,
+  },
+  buyPlanButton: {
+    backgroundColor: '#4B9CD3',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    marginTop: 16,
+  },
+  buyPlanButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
   grid: {
     justifyContent: 'center',

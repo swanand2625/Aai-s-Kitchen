@@ -2,7 +2,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router'; 
 import { Redirect } from 'expo-router';
 export default function HomeScreen() {
-  //return <Redirect href="D:\C Drive\Desktop\Aais Kitchen\mess\app\(auth)" />;
+  
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Welcome to Aai's Kitchen</Text>

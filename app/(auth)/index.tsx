@@ -15,60 +15,68 @@ export default function AuthIndexScreen() {
       Alert.alert('Error', 'Please fill in both fields');
       return;
     }
-
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) {
-      Alert.alert('Login Failed', error.message);
-      return;
-    }
-
-    const userId = data.user.id;
-
-    // Fetch user info from `users` table
-    const { data: userProfile, error: profileError } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', userId)
-      .single();
-
-    if (profileError || !userProfile) {
-      Alert.alert('Error', 'No user profile found');
-      return;
-    }
-
-    const role = userProfile.role;
-
-    // Now based on role
-    if (role === 'franchise_admin') {
-      // Check if franchise_admin has filled details
-      const { data: franchiseAdmin, error: franchiseError } = await supabase
-        .from('franchise_admins')
-        .select('franchise_id')
-        .eq('user_id', userId)
-        .single();
-
-      if (franchiseError || !franchiseAdmin?.franchise_id) {
-        // Franchise admin has NOT filled details yet
-        setUser(userId, role, null);
-        router.replace('/(auth)/admin_details');
-      } else {
-        // Franchise admin already linked to franchise
-        setUser(userId, role, franchiseAdmin.franchise_id);
-        router.replace('/(fadmin)');
+  
+    try {
+      // ✅ Sign in with Supabase
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+  
+      if (signInError || !signInData?.user) {
+        Alert.alert('Login Failed', signInError?.message || 'Unable to login');
+        return;
       }
-    } else if (role === 'mess_member') {
-      // Add your mess member logic here
-      // router.replace('/(member)/home');
-    } else if (role === 'super_admin') {
-      // router.replace('/(super)/dashboard');
-    } else {
-      Alert.alert('Error', 'Unknown user role');
+  
+      const userId = signInData.user.id;
+  
+      // ✅ Fetch user role from your `users` table
+      const { data: userProfile, error: profileError } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', userId)
+        .single();
+  
+      if (profileError || !userProfile) {
+        Alert.alert('Error', 'User profile not found');
+        return;
+      }
+  
+      const role = userProfile.role;
+  
+      // ✅ Role-based logic
+      if (role === 'franchise_admin') {
+        const { data: franchiseAdmin, error: franchiseError } = await supabase
+          .from('franchise_admins')
+          .select('franchise_id')
+          .eq('user_id', userId)
+          .single();
+  
+        if (franchiseError || !franchiseAdmin?.franchise_id) {
+          setUser(userId, role, null); // Not linked yet
+          router.replace('/(auth)/admin_details');
+        } else {
+          setUser(userId, role, franchiseAdmin.franchise_id); // Linked
+          router.replace('/(fadmin)');
+        }
+  
+      } else if (role === 'mess_member') {
+        setUser(userId, role);
+        router.replace('/(user)');
+  
+      } else if (role === 'super_admin') {
+        setUser(userId, role);
+       // router.replace('/(super)/dashboard');
+  
+      } else {
+        Alert.alert('Error', 'Unknown user role');
+      }
+  
+    } catch (err: any) {
+      Alert.alert('Unexpected Error', err.message || 'Something went wrong');
     }
   };
+  
 
   const handleSignUp = () => {
     router.push('/(auth)/signup');
