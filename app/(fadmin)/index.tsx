@@ -8,7 +8,7 @@ const adminDashboardItems = [
   {
     title: 'Total Customers',
     icon: <Ionicons name="people" size={40} color="#4B9CD3" />,
-    navigateTo: 'admin/total-customers',
+    navigateTo: 'admin/tmp',
   },
   {
     title: "Today's Guests",
@@ -23,7 +23,7 @@ const adminDashboardItems = [
   {
     title: 'Attendance',
     icon: <FontAwesome name="calendar-check-o" size={40} color="#FF6363" />,
-    navigateTo: 'admin/attendance',
+     navigateTo: 'admin/tmp2',
   },
   {
     title: 'Feedback Book',

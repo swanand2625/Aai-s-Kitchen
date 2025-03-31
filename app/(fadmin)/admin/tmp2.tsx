@@ -3,21 +3,17 @@ import { View, Text, TouchableOpacity, StyleSheet, Alert, Modal } from 'react-na
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/providers/useAuthStore';
 import moment from 'moment';
-import CalendarStrip from 'react-native-calendar-strip';
 import QRCode from 'react-native-qrcode-svg';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { LogBox } from 'react-native';
-
-LogBox.ignoreLogs(['FontSize should be a positive value']);
+import Button from '@/components/Button';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function AttendanceScreen() {
-  console.log('Rendering AttendanceScreen...');
+
+  
+  
+  const { franchiseId } = useAuthStore();
  
-
-
-  const { userId, franchiseId } = useAuthStore();
-  console.log(franchiseId);
-
   const [selectedDate, setSelectedDate] = useState(moment());
   const [attendance, setAttendance] = useState<Record<string, number>>({
     breakfast: 0,
@@ -26,15 +22,73 @@ export default function AttendanceScreen() {
   });
   const [qrCodes, setQrCodes] = useState<Record<string, string>>({});
   const [qrVisible, setQrVisible] = useState<string | null>(null);
+  
+const handleQR = async () => {
+  if (!franchiseId) {
+    Alert.alert('Error', 'Franchise ID not found');
+    return;
+  }
 
-  // Fetch Attendance Data
+  const formattedDate = selectedDate.format('YYYY-MM-DD');
+
+  // Check if QR codes were already generated for this date
+  const lastGeneratedDate = await AsyncStorage.getItem('last_qr_generated_date');
+  if (lastGeneratedDate === formattedDate) {
+    Alert.alert('QR Code', 'QR codes have already been generated for today.');
+    return;
+  }
+
+  const mealTypes = ['breakfast', 'lunch', 'dinner'];
+  const generatedQRCodes = {};
+  const qrCodeEntries = mealTypes.map((meal) => {
+    const qrString = `QR_${meal.toUpperCase()}_${formattedDate}_${franchiseId}`;
+    generatedQRCodes[meal] = qrString;
+    return {
+      franchise_id: franchiseId,
+      date: formattedDate,
+      meal_type: meal,
+      qr_code: qrString,
+    };
+  });
+
+  const { error } = await supabase.from('meal_qr_codes').insert(qrCodeEntries);
+
+  if (error) {
+    Alert.alert('Error', 'Failed to generate QR codes');
+  } else {
+    setQrCodes(generatedQRCodes);
+    Alert.alert('Success', 'QR codes generated successfully!');
+
+    // Store the generated date in AsyncStorage to disable the button
+    await AsyncStorage.setItem('last_qr_generated_date', formattedDate);
+    setQrGenerated(true); // Disable button
+  }
+};
+
+// State to track button disable status
+const [qrGenerated, setQrGenerated] = useState(false);
+
+// Check if QR was already generated today on mount
+useEffect(() => {
+  const checkLastGeneratedDate = async () => {
+    const lastGeneratedDate = await AsyncStorage.getItem('last_qr_generated_date');
+    const today = moment().format('YYYY-MM-DD');
+
+    setQrGenerated(lastGeneratedDate === today); // Disable if already generated today
+  };
+
+  checkLastGeneratedDate();
+}, [selectedDate]);
+
+
+  // Fetch Attendance Data from Supabase
   useEffect(() => {
     if (!franchiseId) return;
 
     const fetchAttendance = async () => {
       const { data, error } = await supabase
         .from('meal_qr_codes')
-        .select('meal_type')
+        .select('meal_type, qr_code')
         .eq('franchise_id', franchiseId)
         .eq('date', selectedDate.format('YYYY-MM-DD'));
 
@@ -44,61 +98,45 @@ export default function AttendanceScreen() {
       }
 
       const attendanceData: Record<string, number> = { breakfast: 0, lunch: 0, dinner: 0 };
+      const qrCodeData: Record<string, string> = {};
+
       data.forEach((item) => {
-        if (typeof item === 'object' && 'meal_type' in item) {
+        if (typeof item === 'object' && 'meal_type' in item && 'qr_code' in item) {
           const mealType = item.meal_type as string;
           attendanceData[mealType] = (attendanceData[mealType] || 0) + 1;
+          qrCodeData[mealType] = item.qr_code;
         }
       });
 
       setAttendance(attendanceData);
+      setQrCodes(qrCodeData);
     };
 
     fetchAttendance();
   }, [franchiseId, selectedDate]);
 
-  // Generate QR Codes
-  const generateQRCodes = async () => {
-    if (!franchiseId) {
-      Alert.alert('Error', 'Franchise ID not found');
-      return;
-    }
-
-    const mealTypes = ['breakfast', 'lunch', 'dinner'];
-    const generatedQRCodes: Record<string, string> = {};
-    const qrCodeEntries = mealTypes.map((meal) => {
-      const qrString = `QR_${meal.toUpperCase()}_${selectedDate.format('YYYY-MM-DD')}_${franchiseId}`;
-      generatedQRCodes[meal] = qrString;
-      return {
-        franchise_id: franchiseId,
-        date: selectedDate.format('YYYY-MM-DD'),
-        meal_type: meal,
-        qr_code: qrString,
-      };
-    });
-
-    const { error } = await supabase.from('meal_qr_codes').insert(qrCodeEntries);
-
-    if (error) {
-      Alert.alert('Error', 'Failed to generate QR codes');
-    } else {
-      setQrCodes(generatedQRCodes);
-      Alert.alert('Success', 'QR codes generated successfully!');
-    }
-  };
-
   return (
     <View style={styles.container}>
-        
-      {/* Horizontal Calendar */}
-      <CalendarStrip
-        style={styles.calendar}
-        selectedDate={selectedDate}
-        onDateSelected={(date) => setSelectedDate(moment(date))}
-        highlightDateNameStyle={{ color: '#4B9CD3' }}
-        highlightDateNumberStyle={{ color: '#4B9CD3' }}
-        daySelectionAnimation={{ type: 'background', duration: 200, highlightColor: '#E8F0FE' }}
-      />
+
+      {/* Custom Horizontal Date Picker */}
+      <View style={styles.datePickerContainer}>
+        {[...Array(7)].map((_, index) => {
+          const date = moment().subtract(3, 'days').add(index, 'days'); // 3 days before & 3 days after today
+          return (
+            <TouchableOpacity
+              key={index}
+              style={[
+                styles.dateButton,
+                selectedDate.isSame(date, 'day') && styles.selectedDateButton,
+              ]}
+              onPress={() => setSelectedDate(date)}
+            >
+              <Text style={styles.dateText}>{date.format('DD')}</Text>
+              <Text style={styles.dayText}>{date.format('ddd')}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
 
       {/* Attendance Sections */}
       <View style={styles.attendanceContainer}>
@@ -117,11 +155,6 @@ export default function AttendanceScreen() {
         ))}
       </View>
 
-      {/* Generate QR Codes Button */}
-      <TouchableOpacity style={styles.generateButton} onPress={generateQRCodes}>
-        <Text style={styles.buttonText}>Generate QR Codes for {selectedDate.format('YYYY-MM-DD')}</Text>
-      </TouchableOpacity>
-
       {/* QR Code Modal */}
       {qrVisible && (
         <Modal transparent={true} animationType="slide" visible={!!qrVisible}>
@@ -136,6 +169,7 @@ export default function AttendanceScreen() {
           </View>
         </Modal>
       )}
+      <Button text="Generate QR" onPress={handleQR}/>
     </View>
   );
 }
@@ -145,13 +179,6 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
     backgroundColor: '#F4F6F8',
-  },
-  calendar: {
-    height: 100,
-    paddingBottom: 10,
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    marginBottom: 20,
   },
   attendanceContainer: {
     flex: 1,
@@ -172,17 +199,6 @@ const styles = StyleSheet.create({
   paragraph: {
     color: '#555',
   },
-  generateButton: {
-    backgroundColor: '#4B9CD3',
-    padding: 14,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  buttonText: {
-    fontWeight: '700',
-    color: '#fff',
-  },
   modalContainer: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -201,4 +217,33 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 5,
   },
+  buttonText: {
+    fontWeight: '700',
+    color: '#fff',
+  },
+  datePickerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  dateButton: {
+    padding: 10,
+    marginHorizontal: 5,
+    borderRadius: 8,
+    backgroundColor: '#E8F0FE',
+    alignItems: 'center',
+  },
+  selectedDateButton: {
+    backgroundColor: '#4B9CD3',
+  },
+  dateText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  dayText: {
+    fontSize: 12,
+    color: '#555',
+  },
 });
+
