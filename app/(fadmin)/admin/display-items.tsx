@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, FlatList, Image, ActivityIndicator } from 'reac
 import { useLayoutEffect, useEffect, useState } from 'react';
 import Button from '@/components/Button';
 import { supabase } from '@/lib/supabase';
+import { useAuthStore } from '@/providers/useAuthStore';// Import auth store to get franchise_id
 
 export default function DisplayItemsScreen() {
   const { type } = useLocalSearchParams();
@@ -10,6 +11,8 @@ export default function DisplayItemsScreen() {
 
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const franchise_id = useAuthStore((state) => state.franchiseId); // Get franchise ID from auth store
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -21,11 +24,17 @@ export default function DisplayItemsScreen() {
 
   useEffect(() => {
     const fetchMeal = async () => {
+      if (!franchise_id) {
+        console.error('Franchise ID is missing');
+        return;
+      }
+
       setLoading(true);
       const { data, error } = await supabase
         .from('meals')
         .select('*')
         .eq('meal_type', type)
+        .eq('franchise_id', franchise_id) // Filter by franchise_id
         .order('date', { ascending: false }) // Latest first
         .limit(1)
         .single();
@@ -42,7 +51,7 @@ export default function DisplayItemsScreen() {
     };
 
     if (type) fetchMeal();
-  }, [type]);
+  }, [type, franchise_id]); // Re-fetch if type or franchise_id changes
 
   const hasItems = items.length > 0;
 
@@ -83,49 +92,46 @@ export default function DisplayItemsScreen() {
   );
 }
 
-
-
 const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: '#ffffff',
-      padding: 16,
-    },
-    sectionTitle: {
-      fontSize: 20,
-      fontWeight: 'bold',
-      marginBottom: 12,
-    },
-    selectedContainer: {
-      borderRadius: 12,
-      backgroundColor: '#f3f4f6',
-      padding: 12,
-      minHeight: 200,
-    },
-    noItemsText: {
-      fontSize: 16,
-      color: '#6b7280',
-      textAlign: 'center',
-      marginTop: 40,
-    },
-    itemCard: {
-      flex: 1,
-      margin: 8,
-      alignItems: 'center',
-      backgroundColor: '#ffffff',
-      borderRadius: 12,
-      elevation: 2,
-      padding: 10,
-    },
-    image: {
-      width: 100,
-      height: 100,
-      borderRadius: 12,
-      marginBottom: 8,
-    },
-    itemText: {
-      fontSize: 16,
-      textAlign: 'center',
-    },
-  });
-  
+  container: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+    padding: 16,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 12,
+  },
+  selectedContainer: {
+    borderRadius: 12,
+    backgroundColor: '#f3f4f6',
+    padding: 12,
+    minHeight: 200,
+  },
+  noItemsText: {
+    fontSize: 16,
+    color: '#6b7280',
+    textAlign: 'center',
+    marginTop: 40,
+  },
+  itemCard: {
+    flex: 1,
+    margin: 8,
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    elevation: 2,
+    padding: 10,
+  },
+  image: {
+    width: 100,
+    height: 100,
+    borderRadius: 12,
+    marginBottom: 8,
+  },
+  itemText: {
+    fontSize: 16,
+    textAlign: 'center',
+  },
+});

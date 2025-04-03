@@ -19,7 +19,7 @@ import { Buffer } from 'buffer';
 export default function AddFood() {
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
-  const [veg_type, setvegType] = useState('');
+  const [veg_type, setvegType] = useState('veg');
   const [category, setCategory] = useState('main');
   const [image, setImage] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -28,7 +28,6 @@ export default function AddFood() {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       quality: 1,
-      base64: false, // we will read it manually
     });
 
     if (!result.canceled) {
@@ -44,18 +43,18 @@ export default function AddFood() {
 
     try {
       setUploading(true);
-
       const fileUri = image.uri;
       const fileExt = fileUri.split('.').pop();
       const fileName = `${name}-${Date.now()}.${fileExt}`;
 
-      // Convert local file to blob using base64
+      // Convert local file to base64 and buffer
       const base64 = await FileSystem.readAsStringAsync(fileUri, {
         encoding: FileSystem.EncodingType.Base64,
       });
       const fileBuffer = Buffer.from(base64, 'base64');
 
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      // Upload image
+      const { error: uploadError } = await supabase.storage
         .from('food.images')
         .upload(fileName, fileBuffer, {
           contentType: 'image/jpeg',
@@ -64,37 +63,41 @@ export default function AddFood() {
         });
 
       if (uploadError) {
-        console.log(uploadError);
+        console.log('Upload Error:', uploadError);
         throw uploadError;
       }
 
+      // Get public image URL
       const { data: publicUrlData } = supabase.storage
         .from('food.images')
         .getPublicUrl(fileName);
 
       const imageUrl = publicUrlData.publicUrl;
 
+      // Insert into database
       const { error: insertError } = await supabase.from('food_items').insert([
         {
           name,
           category,
           price: parseFloat(price),
           image_url: imageUrl,
-          veg_type
+          veg_type,
         },
       ]);
 
       if (insertError) throw insertError;
 
-      Alert.alert('Food item added successfully!');
+      Alert.alert('✅ Food item added successfully!');
+
+      // Reset form
       setName('');
       setPrice('');
       setCategory('main');
-      setCategory('veg');
+      setvegType('veg');
       setImage(null);
     } catch (error: any) {
       console.error('Upload Error:', error);
-      Alert.alert('Error uploading', error.message || 'Unknown error');
+      Alert.alert('⛔ Error uploading', error.message || 'Unknown error');
     } finally {
       setUploading(false);
     }
@@ -133,13 +136,14 @@ export default function AddFood() {
         </Picker>
       </View>
 
+      <Text style={styles.label}>Veg Type</Text>
       <View style={styles.pickerContainer}>
         <Picker
           selectedValue={veg_type}
           onValueChange={(itemValue) => setvegType(itemValue)}
         >
           <Picker.Item label="Veg" value="veg" />
-          <Picker.Item label="Nonveg" value="nonveg" />  
+          <Picker.Item label="Nonveg" value="nonveg" />
         </Picker>
       </View>
 
@@ -162,6 +166,7 @@ export default function AddFood() {
   );
 }
 
+// 🔹 Styles
 const styles = StyleSheet.create({
   container: {
     flex: 1,

@@ -15,6 +15,7 @@ export default function AttendanceScreen() {
   const { franchiseId } = useAuthStore();
  
   const [selectedDate, setSelectedDate] = useState(moment());
+ 
   const [attendance, setAttendance] = useState<Record<string, number>>({
     breakfast: 0,
     lunch: 0,
@@ -39,7 +40,7 @@ const handleQR = async () => {
   }
 
   const mealTypes = ['breakfast', 'lunch', 'dinner'];
-  const generatedQRCodes = {};
+  const generatedQRCodes: Record<string, string> = {};
   const qrCodeEntries = mealTypes.map((meal) => {
     const qrString = `QR_${meal.toUpperCase()}_${formattedDate}_${franchiseId}`;
     generatedQRCodes[meal] = qrString;
