@@ -1,264 +1,128 @@
-import {
-  View,
-  TextInput,
-  Button,
-  Text,
-  Image,
-  Pressable,
-  Alert,
-  StyleSheet,
-} from 'react-native';
-import React, { useState, useEffect } from 'react';
-import * as ImagePicker from 'expo-image-picker';
-import { Picker } from '@react-native-picker/picker';
-import 'react-native-url-polyfill/auto'; // Needed for Supabase
+import { View, Text, FlatList, Image, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
+import { useLocalSearchParams, router } from 'expo-router';
+import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import Button from '@/components/Button';
+import { useAuthStore } from '@/providers/useAuthStore';
 
-export default function AddFood() {
-  const [user, setUser] = useState(null);
-  const [name, setName] = useState('');
-  const [price, setPrice] = useState('');
-  const [veg_type, setvegType] = useState('veg'); // ✅ Default is 'veg'
-  const [category, setCategory] = useState('main');
-  const [image, setImage] = useState<ImagePicker.ImagePickerAsset | null>(null);
-  const [uploading, setUploading] = useState(false);
+export default function AllFoodItemsScreen() {
+  const { type } = useLocalSearchParams();
+  const [foodItems, setFoodItems] = useState<any[]>([]);
+  const [selected, setSelected] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { franchiseId } = useAuthStore();
+  console.log(franchiseId) // Get franchiseId from auth store
 
-  // 🔐 Fetch the authenticated user
   useEffect(() => {
-    const fetchUser = async () => {
-      const { data, error } = await supabase.auth.getUser();
-      if (error) {
-        console.error('Auth Error:', error);
-      } else {
-        setUser(data.user);
-      }
+    const fetchItems = async () => {
+      const { data, error } = await supabase.from('food_items').select('*');
+      if (error) console.error('Error fetching items:', error.message);
+      else setFoodItems(data || []);
+      setLoading(false);
     };
-
-    fetchUser();
+    fetchItems();
   }, []);
 
-  // 📸 Pick Image from Gallery
-  const pickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 1,
-    });
+  const toggleSelect = (id: string) => {
+    setSelected((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
 
-    if (!result.canceled) {
-      setImage(result.assets[0]);
+  const handleAdd = async () => {
+    // Filter selected food items
+    const selectedItems = foodItems.filter(item => selected.includes(item.id));
+
+    // Construct JSON structure for `menu`
+    const menu = {
+      franchise_id: franchiseId, // Use actual franchise ID
+      items: selectedItems.map(item => ({
+        food_item_id: item.id,
+        name: item.name,
+        image_url: item.image_url,
+      })),
+    };
+
+    // Insert into meals table with franchiseId
+    const { error } = await supabase.from('meals').insert([
+      {
+        meal_type: type,
+        date: new Date().toISOString().split('T')[0], // today's date in YYYY-MM-DD
+        menu,
+        franchise_id: franchiseId, // Ensure it's added to the database
+      },
+    ]);
+
+    if (error) {
+      console.error('Insert error:', error.message);
+    } else {
+      router.back(); // Go back to display screen
     }
   };
 
-  // 🚀 Upload Image to Supabase
-  const uploadImage = async (fileUri: string, fileName: string) => {
-    if (!user) {
-      Alert.alert('Unauthorized', 'You must be logged in to upload images.');
-      return null;
-    }
-
-    try {
-      const response = await fetch(fileUri);
-      const blob = await response.blob();
-
-      const { data, error } = await supabase.storage
-        .from('food.images')
-        .upload(`user_${user.id}/${fileName}`, blob, {
-          contentType: 'image/jpeg',
-          cacheControl: '3600',
-          upsert: false,
-        });
-
-      if (error) {
-        console.error('Upload Error:', error);
-        Alert.alert('Upload Error', error.message);
-        return null;
-      }
-
-      const { data: publicUrlData } = supabase.storage
-        .from('food.images')
-        .getPublicUrl(`user_${user.id}/${fileName}`);
-
-      return publicUrlData.publicUrl;
-    } catch (error) {
-      console.error('Unexpected Upload Error:', error);
-      Alert.alert('Error uploading', error.message || 'Unknown error');
-      return null;
-    }
-  };
-
-  // 🛒 Handle Food Item Submission
-  const handleSubmit = async () => {
-    if (!user) {
-      Alert.alert('Unauthorized', 'You must be logged in to add food items.');
-      return;
-    }
-
-    if (!name || !price || !image) {
-      Alert.alert('Please fill all fields and select an image.');
-      return;
-    }
-
-    try {
-      setUploading(true);
-
-      const fileUri = image.uri;
-      const fileExt = fileUri.split('.').pop();
-      const fileName = `${name}-${Date.now()}.${fileExt}`;
-
-      // ✅ Upload Image & Get Public URL
-      const imageUrl = await uploadImage(fileUri, fileName);
-      if (!imageUrl) {
-        console.error('⛔ Image upload failed.');
-        Alert.alert('⛔ Image upload failed.');
-        return;
-      }
-
-      // ✅ Insert Food Item in Database
-      const { data: insertData, error: insertError } = await supabase
-        .from('food_items')
-        .insert([
-          {
-            name,
-            category,
-            price: parseFloat(price),
-            image_url: imageUrl,
-            veg_type,
-            user_id: user.id, // ✅ Associate food item with the user
-          },
-        ])
-        .select();
-
-      if (insertError) {
-        console.error('Insert Error:', insertError);
-        Alert.alert('Insert Error', insertError.message);
-        return;
-      }
-
-      console.log('✅ Food item inserted successfully:', insertData);
-      Alert.alert('✅ Food item added successfully!');
-
-      // Reset Form
-      setName('');
-      setPrice('');
-      setCategory('main');
-      setvegType('veg');
-      setImage(null);
-    } catch (error) {
-      console.error('Unexpected Error:', error);
-      Alert.alert('Error adding food', error.message || 'Unknown error');
-    } finally {
-      setUploading(false);
-    }
-  };
+  if (loading) return <ActivityIndicator size="large" />;
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>Food Name</Text>
-      <TextInput
-        value={name}
-        onChangeText={setName}
-        placeholder="Enter name"
-        style={styles.input}
+      <Text style={styles.title}>Select Food Items</Text>
+
+      <FlatList
+        data={foodItems}
+        keyExtractor={(item) => item.id}
+        numColumns={2}
+        renderItem={({ item }) => {
+          const isSelected = selected.includes(item.id);
+          return (
+            <Pressable
+              onPress={() => toggleSelect(item.id)}
+              style={[styles.card, isSelected && styles.selectedCard]}
+            >
+              <Image source={{ uri: item.image_url }} style={styles.image} />
+              <Text style={styles.itemName}>{item.name}</Text>
+            </Pressable>
+          );
+        }}
+        contentContainerStyle={{ paddingBottom: 100 }}
       />
 
-      <Text style={styles.label}>Price</Text>
-      <TextInput
-        value={price}
-        onChangeText={setPrice}
-        placeholder="₹0.00"
-        keyboardType="decimal-pad"
-        style={styles.input}
-      />
-
-      <Text style={styles.label}>Category</Text>
-      <View style={styles.pickerContainer}>
-        <Picker
-          selectedValue={category}
-          onValueChange={(itemValue) => setCategory(itemValue)}
-        >
-          <Picker.Item label="Main" value="main" />
-          <Picker.Item label="Side" value="side" />
-          <Picker.Item label="Dessert" value="dessert" />
-          <Picker.Item label="Drink" value="drink" />
-          <Picker.Item label="Snack" value="snack" />
-        </Picker>
-      </View>
-
-      <Text style={styles.label}>Veg Type</Text>
-      <View style={styles.pickerContainer}>
-        <Picker
-          selectedValue={veg_type}
-          onValueChange={(itemValue) => setvegType(itemValue)}
-        >
-          <Picker.Item label="Veg" value="veg" />
-          <Picker.Item label="Non-Veg" value="nonveg" />
-        </Picker>
-      </View>
-
-      <Button title="Pick an image from gallery" onPress={pickImage} />
-
-      {image && (
-        <Image source={{ uri: image.uri }} style={styles.previewImage} />
+      {selected.length > 0 && (
+        <Button text={`Add to ${type}`} onPress={handleAdd} />
       )}
-
-      <Pressable
-        onPress={handleSubmit}
-        disabled={uploading}
-        style={[styles.submitButton, uploading && styles.disabled]}
-      >
-        <Text style={styles.submitText}>
-          {uploading ? 'Uploading...' : 'Submit'}
-        </Text>
-      </Pressable>
     </View>
   );
 }
 
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#fff',
     padding: 16,
-    backgroundColor: '#ffffff',
   },
-  label: {
-    fontSize: 16,
-    marginBottom: 6,
-    fontWeight: '500',
+  title: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 12,
   },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 10,
-    borderRadius: 6,
-    marginBottom: 16,
+  card: {
+    flex: 1,
+    margin: 8,
+    backgroundColor: '#f3f4f6',
+    borderRadius: 12,
+    padding: 12,
+    alignItems: 'center',
   },
-  pickerContainer: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 6,
-    marginBottom: 16,
+  selectedCard: {
+    borderColor: 'green',
+    borderWidth: 2,
   },
-  previewImage: {
+  image: {
     width: 100,
     height: 100,
-    marginVertical: 10,
-    borderRadius: 8,
+    borderRadius: 12,
   },
-  submitButton: {
-    backgroundColor: '#007AFF',
-    paddingVertical: 14,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  submitText: {
-    color: '#fff',
-    fontSize: 16,
+  itemName: {
+    marginTop: 8,
+    textAlign: 'center',
     fontWeight: '600',
   },
-  disabled: {
-    backgroundColor: '#888',
-  },
 });
-
