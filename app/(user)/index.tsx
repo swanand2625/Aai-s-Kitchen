@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'; 
+import React, { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, TouchableOpacity, View, Text, Alert } from 'react-native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from 'expo-router';
@@ -6,7 +6,19 @@ import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/providers/useAuthStore';
 import dayjs from 'dayjs';
 
-const dashboardItems = [
+type DashboardItem = {
+  title: string;
+  icon: React.ReactNode;
+  navigateTo: string;
+};
+
+type Franchise = {
+  name: string;
+  address: string;
+  contact: string;
+};
+
+const dashboardItems: DashboardItem[] = [
   {
     title: 'Profile',
     icon: <Ionicons name="person-circle" size={40} color="#4B9CD3" />,
@@ -32,6 +44,11 @@ const dashboardItems = [
     icon: <MaterialIcons name="restaurant" size={40} color="#FF6363" />,
     navigateTo: 'member/join_mess',
   },
+  {
+    title: 'Mark Attendance',
+    icon: <MaterialIcons name="check-circle" size={40} color="#4CAF50" />,
+    navigateTo: 'member/attendance',
+  },
 ];
 
 export default function TabOneScreen() {
@@ -40,18 +57,6 @@ export default function TabOneScreen() {
   const [franchise, setFranchise] = useState<Franchise | null>(null);
   const [planStart, setPlanStart] = useState<string | null>(null);
   const [planEnd, setPlanEnd] = useState<string | null>(null);
-
-  type DashboardItem = {
-    title: string;
-    icon: React.ReactNode;
-    navigateTo: string;
-  };
-
-  type Franchise = {
-    name: string;
-    address: string;
-    contact: string;
-  };
 
   useEffect(() => {
     const fetchFranchise = async () => {
@@ -99,19 +104,23 @@ export default function TabOneScreen() {
     navigation.navigate('member/buy_plan' as never);
   };
 
-  const renderItem = ({ item }: { item: DashboardItem }) => (
-    <TouchableOpacity
-      style={styles.card}
-      onPress={() => navigation.navigate(item.navigateTo as never)}
-    >
-      <View style={styles.icon}>{item.icon}</View>
-      <Text style={styles.cardText}>{item.title}</Text>
-    </TouchableOpacity>
-  );
+  const renderItem = ({ item }: { item: DashboardItem }) => {
+    console.log('Rendering:', item.title); // Debug log
+    return (
+      <TouchableOpacity
+        style={styles.card}
+        onPress={() => navigation.navigate(item.navigateTo as never)}
+      >
+        <View style={styles.icon}>{item.icon}</View>
+        <Text style={styles.cardText}>{item.title}</Text>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View style={styles.container}>
       <Text style={styles.header}>Mess Member Dashboard</Text>
+      
       {franchise && (
         <View style={styles.franchiseInfo}>
           <Text style={styles.franchiseTitle}>{franchise.name}</Text>
@@ -132,12 +141,13 @@ export default function TabOneScreen() {
           )}
         </View>
       )}
+
       <FlatList
         data={dashboardItems}
         renderItem={renderItem}
-        keyExtractor={(item) => item.title}
+        keyExtractor={(item) => item.navigateTo}
         numColumns={2}
-        contentContainerStyle={styles.grid}
+        contentContainerStyle={[styles.grid, { paddingBottom: 20 }]} // Ensure space for all items
       />
     </View>
   );
