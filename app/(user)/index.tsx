@@ -124,8 +124,8 @@ export default function TabOneScreen() {
       {franchise && (
         <View style={styles.franchiseInfo}>
           <Text style={styles.franchiseTitle}>{franchise.name}</Text>
-          <Text style={styles.franchiseDetails}>{franchise.address}</Text>
-          <Text style={styles.franchiseDetails}>{franchise.contact}</Text>
+          {/* <Text style={styles.franchiseDetails}>{franchise.address}</Text>
+          <Text style={styles.franchiseDetails}>{franchise.contact}</Text> */}
 
           {!hasPlan && (
             <>
@@ -157,41 +157,47 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingTop: 40,
-    backgroundColor: '#F4F6F8',
+    backgroundColor: '#F0FFF8', // Light greenish background
     paddingHorizontal: 16,
   },
   header: {
-    fontSize: 22,
-    fontWeight: '700',
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#1B5E20', // Dark green
+    textAlign: 'center',
     marginBottom: 20,
-    color: '#333',
-    alignSelf: 'center',
   },
   franchiseInfo: {
-    backgroundColor: '#fff',
+    backgroundColor: '#ffffff',
     padding: 16,
-    borderRadius: 8,
+    borderRadius: 12,
     marginBottom: 20,
     alignItems: 'center',
     width: '100%',
+    elevation: 5,
+    shadowColor: '#2E7D32',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
   },
   franchiseTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#2E7D32',
+    marginBottom: 4,
   },
   franchiseDetails: {
     fontSize: 14,
-    color: '#666',
+    color: '#4E4E4E',
     marginBottom: 4,
   },
   buyPlanButton: {
-    backgroundColor: '#4B9CD3',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 8,
+    backgroundColor: '#2E7D32', // Dark green button
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 20,
     marginTop: 16,
+    elevation: 3,
   },
   buyPlanButtonText: {
     color: '#fff',
@@ -200,26 +206,31 @@ const styles = StyleSheet.create({
   },
   grid: {
     justifyContent: 'center',
+    paddingBottom: 20,
   },
   card: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#ffffff',
     margin: 8,
-    borderRadius: 16,
+    borderRadius: 20,
     paddingVertical: 20,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 1, height: 3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 5,
+    shadowColor: '#2E7D32',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 6,
+    transform: [{ scale: 1 }],
+    transitionProperty: 'transform',
+    transitionDuration: '0.3s',
+  },
+  cardText: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#2E7D32',
+    marginTop: 5,
   },
   icon: {
     marginBottom: 10,
-  },
-  cardText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#333',
   },
 });
