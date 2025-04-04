@@ -5,7 +5,6 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
-
 import { useColorScheme } from '@/components/useColorScheme';
 
 export {
@@ -50,13 +49,15 @@ function RootLayoutNav() {
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack >
+      <Stack>
         <Stack.Screen name="(fadmin)" options={{ headerShown: false }} />
         <Stack.Screen name="(user)" options={{ headerShown: false }} />
-       
+        <Stack.Screen name="member/attendance" options={{ title: 'Attendance' }} />
+        <Stack.Screen name="member/QRScanner" options={{ title: 'QR Scanner' }} />
       </Stack>
     </ThemeProvider>
   );
 }
+
 
 // <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
