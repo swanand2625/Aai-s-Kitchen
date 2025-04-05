@@ -28,17 +28,20 @@ export default function DisplayItemsScreen() {
         console.error('Franchise ID is missing');
         return;
       }
-
+  
       setLoading(true);
+  
+      const today = new Date();
+      const formattedToday = today.toISOString().split('T')[0]; // 'YYYY-MM-DD'
+  
       const { data, error } = await supabase
         .from('meals')
         .select('*')
         .eq('meal_type', type)
-        .eq('franchise_id', franchise_id) // Filter by franchise_id
-        .order('date', { ascending: false }) // Latest first
-        .limit(1)
-        .single();
-
+        .eq('franchise_id', franchise_id)
+        .eq('date', formattedToday) // ✅ Filter only today's meals
+        .single(); // because only one meal entry per day
+  
       if (error) {
         console.error('Fetch error:', error.message);
         setItems([]);
@@ -46,12 +49,13 @@ export default function DisplayItemsScreen() {
         const menuItems = data?.menu?.items || [];
         setItems(menuItems);
       }
-
+  
       setLoading(false);
     };
-
+  
     if (type) fetchMeal();
-  }, [type, franchise_id]); // Re-fetch if type or franchise_id changes
+  }, [type, franchise_id]);
+   // Re-fetch if type or franchise_id changes
 
   const hasItems = items.length > 0;
 

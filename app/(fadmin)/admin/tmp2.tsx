@@ -9,13 +9,8 @@ import Button from '@/components/Button';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function AttendanceScreen() {
-
-  
-  
   const { franchiseId } = useAuthStore();
- 
   const [selectedDate, setSelectedDate] = useState(moment());
- 
   const [attendance, setAttendance] = useState<Record<string, number>>({
     breakfast: 0,
     lunch: 0,
@@ -23,228 +18,117 @@ export default function AttendanceScreen() {
   });
   const [qrCodes, setQrCodes] = useState<Record<string, string>>({});
   const [qrVisible, setQrVisible] = useState<string | null>(null);
-  
-const handleQR = async () => {
-  if (!franchiseId) {
-    Alert.alert('Error', 'Franchise ID not found');
-    return;
-  }
 
-  const formattedDate = selectedDate.format('YYYY-MM-DD');
-
-  // Check if QR codes were already generated for this date
-  const lastGeneratedDate = await AsyncStorage.getItem('last_qr_generated_date');
-  if (lastGeneratedDate === formattedDate) {
-    Alert.alert('QR Code', 'QR codes have already been generated for today.');
-    return;
-  }
-
-  const mealTypes = ['breakfast', 'lunch', 'dinner'];
-  const generatedQRCodes: Record<string, string> = {};
-  const qrCodeEntries = mealTypes.map((meal) => {
-    const qrString = `QR_${meal.toUpperCase()}_${formattedDate}_${franchiseId}`;
-    generatedQRCodes[meal] = qrString;
-    return {
-      franchise_id: franchiseId,
-      date: formattedDate,
-      meal_type: meal,
-      qr_code: qrString,
-    };
-  });
-
-  const { error } = await supabase.from('meal_qr_codes').insert(qrCodeEntries);
-
-  if (error) {
-    Alert.alert('Error', 'Failed to generate QR codes');
-  } else {
-    setQrCodes(generatedQRCodes);
-    Alert.alert('Success', 'QR codes generated successfully!');
-
-    // Store the generated date in AsyncStorage to disable the button
-    await AsyncStorage.setItem('last_qr_generated_date', formattedDate);
-    setQrGenerated(true); // Disable button
-  }
-};
-
-// State to track button disable status
-const [qrGenerated, setQrGenerated] = useState(false);
-
-// Check if QR was already generated today on mount
-useEffect(() => {
-  const checkLastGeneratedDate = async () => {
-    const lastGeneratedDate = await AsyncStorage.getItem('last_qr_generated_date');
-    const today = moment().format('YYYY-MM-DD');
-
-    setQrGenerated(lastGeneratedDate === today); // Disable if already generated today
-  };
-
-  checkLastGeneratedDate();
-}, [selectedDate]);
-
-
-  // Fetch Attendance Data from Supabase
+  // Fetch QR and attendance whenever selected date changes
   useEffect(() => {
-    if (!franchiseId) return;
+    if (franchiseId) {
+      fetchAttendanceAndQR();
+    }
+  }, [selectedDate, franchiseId]);
 
-    const fetchAttendance = async () => {
-      const { data, error } = await supabase
-        .from('meal_qr_codes')
-        .select('meal_type, qr_code')
-        .eq('franchise_id', franchiseId)
-        .eq('date', selectedDate.format('YYYY-MM-DD'));
+  const fetchAttendanceAndQR = async () => {
+    const formattedDate = selectedDate.format('YYYY-MM-DD');
 
-      if (error) {
-        Alert.alert('Error', 'Could not fetch attendance');
-        return;
-      }
+    // Fetch QR Codes
+    const { data: qrData, error: qrError } = await supabase
+      .from('meal_qr_codes')
+      .select('meal_type, qr_code')
+      .eq('franchise_id', franchiseId)
+      .eq('date', formattedDate);
 
-      const attendanceData: Record<string, number> = { breakfast: 0, lunch: 0, dinner: 0 };
-      const qrCodeData: Record<string, string> = {};
+    if (qrError) {
+      console.error('QR fetch error:', qrError.message);
+    } else if (qrData) {
+      const loadedQRCodes: Record<string, string> = {};
+      qrData.forEach((item) => {
+        loadedQRCodes[item.meal_type] = item.qr_code;
+      });
+      setQrCodes(loadedQRCodes);
+    }
 
-      data.forEach((item) => {
-        if (typeof item === 'object' && 'meal_type' in item && 'qr_code' in item) {
-          const mealType = item.meal_type as string;
-          attendanceData[mealType] = (attendanceData[mealType] || 0) + 1;
-          qrCodeData[mealType] = item.qr_code;
+    // Fetch Attendance
+    const { data: attendanceData, error: attendanceError } = await supabase
+      .from('attendance') // <-- correct table name
+      .select('meal_type')
+      .eq('franchise_id', franchiseId)
+      .eq('date', formattedDate);
+
+    if (attendanceError) {
+      console.error('Attendance fetch error:', attendanceError.message);
+      setAttendance({ breakfast: 0, lunch: 0, dinner: 0 });
+    } else if (attendanceData) {
+      // Manually group by meal_type
+      const counts: Record<string, number> = { breakfast: 0, lunch: 0, dinner: 0 };
+      attendanceData.forEach((item) => {
+        const mealType = item.meal_type;
+        if (mealType && counts.hasOwnProperty(mealType)) {
+          counts[mealType]++;
         }
       });
+      setAttendance(counts);
+    }
+  };
 
-      setAttendance(attendanceData);
-      setQrCodes(qrCodeData);
-    };
+  const handleDateChange = (days: number) => {
+    setSelectedDate((prev) => prev.clone().add(days, 'days'));
+  };
 
-    fetchAttendance();
-  }, [franchiseId, selectedDate]);
+  const handleShowQR = (mealType: string) => {
+    if (qrCodes[mealType]) {
+      setQrVisible(mealType);
+    } else {
+      Alert.alert('No QR Code', `No QR code available for ${mealType}`);
+    }
+  };
 
   return (
     <View style={styles.container}>
+      <Text style={styles.dateText}>{selectedDate.format('MMMM Do, YYYY')}</Text>
 
-      {/* Custom Horizontal Date Picker */}
-      <View style={styles.datePickerContainer}>
-        {[...Array(7)].map((_, index) => {
-          const date = moment().subtract(3, 'days').add(index, 'days'); // 3 days before & 3 days after today
-          return (
-            <TouchableOpacity
-              key={index}
-              style={[
-                styles.dateButton,
-                selectedDate.isSame(date, 'day') && styles.selectedDateButton,
-              ]}
-              onPress={() => setSelectedDate(date)}
-            >
-              <Text style={styles.dateText}>{date.format('DD')}</Text>
-              <Text style={styles.dayText}>{date.format('ddd')}</Text>
-            </TouchableOpacity>
-          );
-        })}
+      <View style={styles.buttonRow}>
+        <Button text="Previous" onPress={() => handleDateChange(-1)} />
+        <Button text="Next" onPress={() => handleDateChange(1)} />
       </View>
 
-      {/* Attendance Sections */}
-      <View style={styles.attendanceContainer}>
-        {['breakfast', 'lunch', 'dinner'].map((meal) => (
-          <View key={meal} style={styles.attendanceCard}>
-            <Text style={styles.header}>{meal.toUpperCase()}</Text>
-            <Text style={styles.paragraph}>Total Attendees: {attendance[meal] ?? 0}</Text>
+      {['breakfast', 'lunch', 'dinner'].map((meal) => (
+        <TouchableOpacity
+          key={meal}
+          style={styles.mealCard}
+          onPress={() => handleShowQR(meal)}
+        >
+          <MaterialCommunityIcons name="food" size={24} color="black" />
+          <Text style={styles.mealText}>{meal.toUpperCase()}</Text>
+          <Text style={styles.countText}>{attendance[meal]} attendees</Text>
+        </TouchableOpacity>
+      ))}
 
-            {/* Eye Icon to Show QR Code */}
-            {qrCodes[meal] && (
-              <TouchableOpacity onPress={() => setQrVisible(meal)}>
-                <MaterialCommunityIcons name="eye" size={24} color="#4B9CD3" />
-              </TouchableOpacity>
+      <Modal visible={qrVisible !== null} transparent animationType="slide">
+        <View style={styles.modalContainer}>
+          <View style={styles.qrContainer}>
+            {qrVisible && qrCodes[qrVisible] && (
+              <QRCode value={qrCodes[qrVisible]} size={250} />
             )}
+            <Button text="Close" onPress={() => setQrVisible(null)} />
           </View>
-        ))}
-      </View>
-
-      {/* QR Code Modal */}
-      {qrVisible && (
-        <Modal transparent={true} animationType="slide" visible={!!qrVisible}>
-          <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
-              <Text style={styles.header}>{qrVisible.toUpperCase()} QR Code</Text>
-              <QRCode value={qrCodes[qrVisible]} size={200} />
-              <TouchableOpacity style={styles.closeButton} onPress={() => setQrVisible(null)}>
-                <Text style={styles.buttonText}>Close</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
-      )}
-      <Button text="Generate QR" onPress={handleQR}/>
+        </View>
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 16,
-    backgroundColor: '#F4F6F8',
-  },
-  attendanceContainer: {
-    flex: 1,
-  },
-  attendanceCard: {
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 10,
-    marginBottom: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  header: {
-    fontWeight: '700',
-    color: '#333',
-  },
-  paragraph: {
-    color: '#555',
-  },
-  modalContainer: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: '#fff',
+  container: { flex: 1, padding: 20, backgroundColor: '#fff' },
+  dateText: { fontSize: 20, textAlign: 'center', marginBottom: 20 },
+  buttonRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },
+  mealCard: {
     padding: 20,
+    backgroundColor: '#f1f1f1',
     borderRadius: 10,
+    marginBottom: 15,
     alignItems: 'center',
   },
-  closeButton: {
-    marginTop: 20,
-    backgroundColor: '#4B9CD3',
-    padding: 10,
-    borderRadius: 5,
-  },
-  buttonText: {
-    fontWeight: '700',
-    color: '#fff',
-  },
-  datePickerContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginBottom: 20,
-  },
-  dateButton: {
-    padding: 10,
-    marginHorizontal: 5,
-    borderRadius: 8,
-    backgroundColor: '#E8F0FE',
-    alignItems: 'center',
-  },
-  selectedDateButton: {
-    backgroundColor: '#4B9CD3',
-  },
-  dateText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  dayText: {
-    fontSize: 12,
-    color: '#555',
-  },
+  mealText: { fontSize: 18, marginTop: 10 },
+  countText: { fontSize: 16, marginTop: 5, color: 'gray' },
+  modalContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' },
+  qrContainer: { backgroundColor: '#fff', padding: 20, borderRadius: 10, alignItems: 'center' },
 });
-
