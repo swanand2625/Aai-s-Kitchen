@@ -28,7 +28,7 @@ export default function Profile() {
         // Fetch user details
         const { data: userData, error: userError } = await supabase
           .from("users")
-          .select("name, contact")
+          .select("name")
           .eq("id", userId)
           .single();
 

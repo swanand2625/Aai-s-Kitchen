@@ -1,34 +1,127 @@
-import React from "react";
-import { View, Text, Pressable, StyleSheet } from "react-native";
+import React, { useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  ScrollView,
+  Pressable,
+  StyleSheet,
+  ActivityIndicator,
+  Dimensions,
+} from "react-native";
 import { useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
-import { format } from "date-fns";
+import {
+  format,
+  startOfMonth,
+  endOfMonth,
+  getDaysInMonth,
+} from "date-fns";
+import { supabase } from "@/lib/supabase";
+import Swiper from "react-native-swiper";
 
-const mealTypes = [
+// Meal buttons data
+const mealButtons = [
   { name: "Breakfast", icon: "free-breakfast" },
   { name: "Lunch", icon: "lunch-dining" },
   { name: "Dinner", icon: "dinner-dining" },
 ];
 
-export default function Attendance() {
+const monthList = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December"
+];
+
+const Attendance = () => {
   const router = useRouter();
   const today = format(new Date(), "EEEE, MMMM d, yyyy");
 
-  const handlePress = (meal: string) => {
-    router.push({ pathname: '/member/QRScanner', params: { mealType: meal } });
+  const [attendanceData, setAttendanceData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [selectedMonthIndex, setSelectedMonthIndex] = useState(
+    new Date().getMonth()
+  );
+
+  // Fetch logged in user ID
+  useEffect(() => {
+    const getUser = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (session?.user?.id) {
+        setUserId(session.user.id);
+      }
+    };
+    getUser();
+  }, []);
+
+  // Fetch attendance when user or selected month changes
+  useEffect(() => {
+    if (userId) fetchAttendance();
+  }, [userId, selectedMonthIndex]);
+
+  const fetchAttendance = async () => {
+    setLoading(true);
+
+    const { data: member, error: memberError } = await supabase
+      .from("mess_members")
+      .select("id")
+      .eq("user_id", userId)
+      .single();
+
+    if (memberError || !member) {
+      console.error("Error fetching member", memberError);
+      setLoading(false);
+      return;
+    }
+
+    const year = new Date().getFullYear();
+    const start = format(startOfMonth(new Date(year, selectedMonthIndex)), "yyyy-MM-dd");
+    const end = format(endOfMonth(new Date(year, selectedMonthIndex)), "yyyy-MM-dd");
+
+    const { data, error } = await supabase
+      .from("attendance")
+      .select("*")
+      .eq("mess_member_id", member.id)
+      .gte("date", start)
+      .lte("date", end);
+
+    if (error) {
+      console.error("Error fetching attendance", error);
+    } else {
+      setAttendanceData(data);
+    }
+
+    setLoading(false);
+  };
+
+  const daysInMonth = Array.from(
+    { length: getDaysInMonth(new Date(new Date().getFullYear(), selectedMonthIndex)) },
+    (_, i) =>
+      format(new Date(new Date().getFullYear(), selectedMonthIndex, i + 1), "yyyy-MM-dd")
+  );
+
+  const getColor = (date: string, mealType: string) => {
+    const entry = attendanceData.find(
+      (att) => att.date === date && att.meal_type === mealType.toLowerCase()
+    );
+    if (!entry) return "#dee2e6"; // grey
+    return entry.attended ? "#2ECC71" : "#E74C3C"; // green/red
   };
 
   return (
-    <View style={styles.container}>
-      {/* Display Current Date */}
+    <ScrollView contentContainerStyle={styles.container}>
+      {/* Date Display */}
       <Text style={styles.dateText}>{today}</Text>
 
-      {/* Meal Attendance Buttons */}
+      {/* QR Meal Buttons */}
       <View style={styles.gridContainer}>
-        {mealTypes.map(({ name, icon }) => (
+        {mealButtons.map(({ name, icon }) => (
           <Pressable
             key={name}
-            onPress={() => handlePress(name)}
+            onPress={() =>
+              router.push({ pathname: "/member/QRScanner", params: { mealType: name } })
+            }
             style={({ pressed }) => [styles.gridBox, pressed && styles.pressed]}
           >
             <MaterialIcons name={icon} size={32} color="#fff" />
@@ -36,30 +129,73 @@ export default function Attendance() {
           </Pressable>
         ))}
       </View>
-    </View>
+
+      {/* Month Swiper */}
+      <View style={{ height: 350 }}>
+        <Swiper
+          showsPagination={true}
+          loop={false}
+          index={selectedMonthIndex}
+          onIndexChanged={(index) => setSelectedMonthIndex(index)}
+        >
+          {monthList.map((month, index) => (
+            <View key={month} style={styles.swiperSlide}>
+              <Text style={styles.summaryTitle}>Attendance Summary ({month} 2025)</Text>
+              {loading ? (
+                <ActivityIndicator size="large" color="#2ECC71" />
+              ) : (
+                <View>
+                  {["breakfast", "lunch", "dinner"].map((meal) => (
+                    <View key={meal} style={{ marginBottom: 20 }}>
+                      <Text style={styles.mealLabel}>🍽️ {meal}</Text>
+                      <View style={styles.dotRow}>
+                        {daysInMonth.map((date) => (
+                          <View
+                            key={date + meal}
+                            style={{
+                              width: 14,
+                              height: 14,
+                              margin: 3,
+                              backgroundColor: getColor(date, meal),
+                              borderRadius: 3,
+                            }}
+                          />
+                        ))}
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+          ))}
+        </Swiper>
+      </View>
+    </ScrollView>
   );
-}
+};
+
+export default Attendance;
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#F8F9FA",
+    padding: 20,
+    backgroundColor: "#ffffff",
+    flexGrow: 1,
   },
   dateText: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: "600",
     marginBottom: 20,
-    color: "#333",
+    color: "#2ECC71",
+    textAlign: "center",
   },
   gridContainer: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    width: "90%",
+    justifyContent: "space-around",
+    marginBottom: 30,
   },
   gridBox: {
-    backgroundColor: "#007AFF",
+    backgroundColor: "#2ECC71",
     padding: 20,
     borderRadius: 15,
     alignItems: "center",
@@ -73,11 +209,32 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
   },
   pressed: {
-    opacity: 0.7,
+    opacity: 0.8,
   },
   gridText: {
     color: "#fff",
     fontWeight: "bold",
     marginTop: 5,
+  },
+  swiperSlide: {
+    paddingVertical: 10,
+  },
+  summaryTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#333",
+    marginBottom: 15,
+    textAlign: "center",
+  },
+  mealLabel: {
+    fontSize: 16,
+    marginBottom: 8,
+    textTransform: "capitalize",
+    color: "#444",
+    fontWeight: "600",
+  },
+  dotRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
   },
 });
