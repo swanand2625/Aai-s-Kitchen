@@ -32,7 +32,7 @@ const dashboardItems: DashboardItem[] = [
   {
     title: 'Holiday Request',
     icon: <Ionicons name="calendar" size={40} color="#00BFA6" />,
-    navigateTo: 'member/holiday',
+    navigateTo: 'member/tmp3',
   },
   {
     title: 'Bill Section',
@@ -105,7 +105,7 @@ export default function TabOneScreen() {
   };
 
   const renderItem = ({ item }: { item: DashboardItem }) => {
-    console.log('Rendering:', item.title); // Debug log
+   
     return (
       <TouchableOpacity
         style={styles.card}

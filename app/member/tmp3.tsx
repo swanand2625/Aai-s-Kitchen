@@ -1,31 +1,29 @@
-import { View, Text, Button, StyleSheet, FlatList, Alert, TouchableOpacity } from 'react-native';
+import { View, Text, Button, StyleSheet, FlatList, Alert } from 'react-native';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/providers/useAuthStore';
-//import DateTimePickerModal from 'react-native-modal-datetime-picker';
+import { Calendar } from 'react-native-calendars';
 
 export default function HolidayRequest() {
   const { userId } = useAuthStore();
   const [memberId, setMemberId] = useState<string | null>(null);
-  const [startHoliday, setStartHoliday] = useState<Date | null>(null);
-  const [endHoliday, setEndHoliday] = useState<Date | null>(null);
+  const [franchiseId, setFranchiseId] = useState<string | null>(null);
 
-  const [isStartPickerVisible, setStartPickerVisibility] = useState(false);
-  const [isEndPickerVisible, setEndPickerVisibility] = useState(false);
+  const [startDate, setStartDate] = useState<string | null>(null);
+  const [endDate, setEndDate] = useState<string | null>(null);
+  const [selectingEnd, setSelectingEnd] = useState(false);
 
   const [pastRequests, setPastRequests] = useState<any[]>([]);
   const [holidayCount, setHolidayCount] = useState(0);
 
   useEffect(() => {
-    if (userId) {
-      fetchMemberInfo(userId);
-    }
+    if (userId) fetchMemberInfo(userId);
   }, [userId]);
 
   async function fetchMemberInfo(userId: string) {
     const { data, error } = await supabase
       .from('mess_members')
-      .select('id')
+      .select('id, franchise_id')
       .eq('user_id', userId)
       .single();
 
@@ -33,6 +31,7 @@ export default function HolidayRequest() {
       console.error('Error fetching member info:', error.message);
     } else {
       setMemberId(data.id);
+      setFranchiseId(data.franchise_id);
       fetchPastHolidays(data.id);
     }
   }
@@ -58,7 +57,7 @@ export default function HolidayRequest() {
   }
 
   async function requestHoliday() {
-    if (!startHoliday || !endHoliday) {
+    if (!startDate || !endDate) {
       Alert.alert('Error', 'Please select both start and end dates.');
       return;
     }
@@ -68,14 +67,15 @@ export default function HolidayRequest() {
       return;
     }
 
-    if (!memberId) return;
+    if (!memberId || !franchiseId) return;
 
     const { error } = await supabase
       .from('holidays')
       .insert({
         member_id: memberId,
-        start_date: startHoliday,
-        end_date: endHoliday,
+        franchise_id: franchiseId,
+        start_date: startDate,
+        end_date: endDate,
         status: 'pending'
       });
 
@@ -84,24 +84,70 @@ export default function HolidayRequest() {
     } else {
       Alert.alert('Success', 'Holiday requested successfully!');
       fetchPastHolidays(memberId);
-      setStartHoliday(null);
-      setEndHoliday(null);
+      setStartDate(null);
+      setEndDate(null);
+      setSelectingEnd(false);
     }
   }
 
-  const today = new Date();
+  const markedDates = (): any => {
+    let marks: any = {};
+    if (startDate && endDate) {
+      let start = new Date(startDate);
+      let end = new Date(endDate);
+      while (start <= end) {
+        const key = start.toISOString().split('T')[0];
+        marks[key] = {
+          selected: true,
+          color: '#228b22',
+          textColor: 'white'
+        };
+        start.setDate(start.getDate() + 1);
+      }
+    } else if (startDate) {
+      marks[startDate] = {
+        selected: true,
+        color: '#228b22',
+        textColor: 'white'
+      };
+    }
+    return marks;
+  };
+
+  const handleDateSelect = (day: any) => {
+    if (!startDate || (startDate && endDate)) {
+      setStartDate(day.dateString);
+      setEndDate(null);
+      setSelectingEnd(true);
+    } else if (selectingEnd && day.dateString >= startDate) {
+      setEndDate(day.dateString);
+    } else {
+      Alert.alert('Invalid End Date', 'End date should be after start date.');
+    }
+  };
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Holiday Request</Text>
 
-      <TouchableOpacity onPress={() => setStartPickerVisibility(true)} style={styles.dateButton}>
-        <Text>{startHoliday ? startHoliday.toDateString() : 'Select Start Date'}</Text>
-      </TouchableOpacity>
+      <Text style={styles.label}>
+        {startDate && endDate
+          ? `Selected: ${startDate} → ${endDate}`
+          : startDate
+          ? `Select end date after ${startDate}`
+          : 'Select start date'}
+      </Text>
 
-      <TouchableOpacity onPress={() => setEndPickerVisibility(true)} style={styles.dateButton}>
-        <Text>{endHoliday ? endHoliday.toDateString() : 'Select End Date'}</Text>
-      </TouchableOpacity>
+      <Calendar
+        minDate={new Date().toISOString().split('T')[0]}
+        onDayPress={handleDateSelect}
+        markedDates={markedDates()}
+        markingType="period"
+        theme={{
+          selectedDayBackgroundColor: '#228b22',
+          todayTextColor: 'red',
+        }}
+      />
 
       <Button title="Request Holiday" onPress={requestHoliday} />
 
@@ -116,46 +162,14 @@ export default function HolidayRequest() {
           </View>
         )}
       />
-
-      <DateTimePickerModal
-        isVisible={isStartPickerVisible}
-        mode="date"
-        minimumDate={today}
-        onConfirm={(date) => {
-          setStartHoliday(date);
-          setStartPickerVisibility(false);
-        }}
-        onCancel={() => setStartPickerVisibility(false)}
-      />
-
-      <DateTimePickerModal
-        isVisible={isEndPickerVisible}
-        mode="date"
-        minimumDate={startHoliday || today}
-        onConfirm={(date) => {
-          setEndHoliday(date);
-          setEndPickerVisibility(false);
-        }}
-        onCancel={() => setEndPickerVisibility(false)}
-      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1, padding: 20, backgroundColor: '#fff'
-  },
-  title: {
-    fontSize: 22, fontWeight: 'bold', marginBottom: 20
-  },
-  subtitle: {
-    fontSize: 18, fontWeight: '600', marginTop: 30, marginBottom: 10
-  },
-  dateButton: {
-    padding: 12, backgroundColor: '#eee', borderRadius: 8, marginBottom: 10, alignItems: 'center'
-  },
-  listItem: {
-    padding: 10, borderBottomColor: '#ccc', borderBottomWidth: 1
-  }
+  container: { flex: 1, padding: 20, backgroundColor: '#fff' },
+  title: { fontSize: 22, fontWeight: 'bold', marginBottom: 10 },
+  subtitle: { fontSize: 18, fontWeight: '600', marginTop: 30, marginBottom: 10 },
+  label: { fontSize: 16, marginVertical: 10, color: '#555' },
+  listItem: { padding: 10, borderBottomColor: '#ccc', borderBottomWidth: 1 }
 });

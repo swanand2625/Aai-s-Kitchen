@@ -35,6 +35,11 @@ const adminDashboardItems = [
     icon: <FontAwesome name="credit-card" size={40} color="#FFC107" />,
     navigateTo: 'admin/payments',
   },
+  {
+    title: 'Holiday Requests',
+    icon: <FontAwesome name="credit-card" size={40} color="#FFC107" />,
+    navigateTo: 'admin/holidayreq',
+  },
 ];
 
 export default function FranchiseAdminDashboard() {
