@@ -6,7 +6,6 @@ import {
   Pressable,
   StyleSheet,
   ActivityIndicator,
-  Dimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -109,6 +108,11 @@ const Attendance = () => {
     return entry.attended ? "#2ECC71" : "#E74C3C"; // green/red
   };
 
+  const handleQRPress = (meal: string) => {
+    // ✅ safer param passing
+    router.push(`/member/QRScanner?mealType=${meal}`);
+  };
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
       {/* Date Display */}
@@ -119,9 +123,7 @@ const Attendance = () => {
         {mealButtons.map(({ name, icon }) => (
           <Pressable
             key={name}
-            onPress={() =>
-              router.push({ pathname: "/member/QRScanner", params: { mealType: name } })
-            }
+            onPress={() => handleQRPress(name)}
             style={({ pressed }) => [styles.gridBox, pressed && styles.pressed]}
           >
             <MaterialIcons name={icon} size={32} color="#fff" />
@@ -140,7 +142,7 @@ const Attendance = () => {
         >
           {monthList.map((month, index) => (
             <View key={month} style={styles.swiperSlide}>
-              <Text style={styles.summaryTitle}>Attendance Summary ({month} 2025)</Text>
+              <Text style={styles.summaryTitle}>({month} 2025)</Text>
               {loading ? (
                 <ActivityIndicator size="large" color="#2ECC71" />
               ) : (

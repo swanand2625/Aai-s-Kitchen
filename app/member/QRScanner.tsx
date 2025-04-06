@@ -6,7 +6,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { useAuthStore } from '@/providers/useAuthStore';
 
 export default function QRScanner() {
-  const { mealType } = useLocalSearchParams<{ mealType: string }>(); 
+  const { mealType } = useLocalSearchParams<{ mealType: string }>();
   const { userId } = useAuthStore();
 
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
@@ -34,6 +34,17 @@ export default function QRScanner() {
     const qrCodeValue = event.data;
     const today = new Date().toISOString().split('T')[0];
 
+    // Extract franchise ID from the QR code value
+    const parts = qrCodeValue.split('_');
+    const scannedFranchiseId = parts.length === 4 ? parts[3] : null;
+
+    if (!scannedFranchiseId) {
+      console.log("Scanned"+scannedFranchiseId)
+      Alert.alert('Invalid QR Code Format');
+      setScanned(false);
+      return;
+    }
+
     try {
       const { data: qrData, error: qrError } = await supabase
         .from('meal_qr_codes')
@@ -41,9 +52,12 @@ export default function QRScanner() {
         .eq('qr_code', qrCodeValue)
         .eq('meal_type', mealType)
         .eq('date', today)
-        .single();
+        .eq('franchise_id',scannedFranchiseId);// Added franchise ID check
+        //.single();
 
       if (qrError || !qrData) {
+        console.log(qrError);
+        console.log(!qrData);
         Alert.alert('Invalid QR Code');
         setScanned(false);
         return;
@@ -58,32 +72,36 @@ export default function QRScanner() {
         .from('mess_members')
         .select('id, franchise_id')
         .eq('user_id', userId)
-        .single();
+       .single();
 
       if (memberError || !messMember) {
         Alert.alert('Mess member not found');
         return;
       }
 
-      if (messMember.franchise_id !== qrData.franchise_id) {
-        Alert.alert('Franchise mismatch ❌');
+      if (messMember.franchise_id !== scannedFranchiseId) {
+        console.log("messMember.franchise_id"+messMember.franchise_id )
+        console.log("scannedFranchiseId"+scannedFranchiseId)
+        Alert.alert('Franchsise mismatch ❌');
         return;
       }
 
       const { error: insertError } = await supabase.from('attendance').insert([
         {
           mess_member_id: messMember.id,
-          meal_type: mealType,
+          meal_type: mealType.toLowerCase(),
           attended: true,
           date: today,
-          franchise_id: messMember.franchise_id,
+          franchise_id: scannedFranchiseId,
         },
       ]);
 
       if (insertError) {
+        console.log(mealType)
+        console.log(insertError)
         Alert.alert('Attendance already marked or error occurred');
       } else {
-        Alert.alert('✅ Attendance marked!');
+        Alert.alert('Attendance marked!');
       }
     } catch (error) {
       console.error(error);

@@ -1,10 +1,10 @@
-import { View, Text, StyleSheet, FlatList, Image, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Image, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { useAuthStore } from '@/providers/useAuthStore'; // To get userId
+import { useAuthStore } from '@/providers/useAuthStore';
 
 export default function Menu() {
-  const userId = useAuthStore((state) => state.userId); // Get userId from auth store
+  const userId = useAuthStore((state) => state.userId);
   const [mealsByType, setMealsByType] = useState<{ [key: string]: any[] }>({});
   const [loading, setLoading] = useState(true);
 
@@ -17,7 +17,6 @@ export default function Menu() {
 
       setLoading(true);
 
-      // Step 1: Get franchise_id from mess_member
       const { data: memberData, error: memberError } = await supabase
         .from('mess_members')
         .select('franchise_id')
@@ -33,16 +32,13 @@ export default function Menu() {
       }
 
       const franchiseId = memberData.franchise_id;
-
-      // Step 2: Get today's meals
-      const today = new Date();
-      const formattedToday = today.toISOString().split('T')[0];
+      const today = new Date().toISOString().split('T')[0];
 
       const { data: mealsData, error: mealsError } = await supabase
         .from('meals')
         .select('meal_type, menu')
         .eq('franchise_id', franchiseId)
-        .eq('date', formattedToday);
+        .eq('date', today);
 
       if (mealsError || !mealsData) {
         console.error('Error fetching meals:', mealsError?.message);
@@ -51,7 +47,6 @@ export default function Menu() {
         return;
       }
 
-      // Organize meals by meal_type
       const organizedMeals: { [key: string]: any[] } = {};
       mealsData.forEach((meal) => {
         const type = meal.meal_type;
@@ -70,30 +65,44 @@ export default function Menu() {
 
   const mealTypesOrder = ['breakfast', 'lunch', 'dinner'];
 
+  const handleAddExtraItem = (mealType: string) => {
+    Alert.alert(`Add extra item`, `You can add extra food item for ${mealType}`);
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>🍽 Today’s Menu</Text>
+
       {loading ? (
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color="#4CAF50" />
       ) : (
         mealTypesOrder.map((mealType) => (
           <View key={mealType} style={styles.mealSection}>
             <Text style={styles.mealTitle}>
               {mealType.charAt(0).toUpperCase() + mealType.slice(1)}
             </Text>
+
             {mealsByType[mealType] ? (
-              <FlatList
-                data={mealsByType[mealType]}
-                keyExtractor={(item) => item.food_item_id}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                renderItem={({ item }) => (
-                  <View style={styles.card}>
-                    <Image source={{ uri: item.image_url }} style={styles.image} />
-                    <Text style={styles.itemName}>{item.name}</Text>
-                  </View>
-                )}
-              />
+              <>
+                <FlatList
+                  data={mealsByType[mealType]}
+                  keyExtractor={(item) => item.food_item_id}
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  renderItem={({ item }) => (
+                    <View style={styles.card}>
+                      <Image source={{ uri: item.image_url }} style={styles.image} />
+                      <Text style={styles.itemName}>{item.name}</Text>
+                    </View>
+                  )}
+                />
+                <TouchableOpacity
+                  style={styles.addButton}
+                  onPress={() => handleAddExtraItem(mealType)}
+                >
+                  <Text style={styles.addButtonText}>+ Add Extra Item</Text>
+                </TouchableOpacity>
+              </>
             ) : (
               <Text style={styles.noItemText}>No {mealType} menu available</Text>
             )}
@@ -107,44 +116,66 @@ export default function Menu() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 24,
-    backgroundColor: '#FFF8F0',
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+    backgroundColor: '#f9fff9', // greenish-white
   },
   title: {
     fontSize: 26,
-    fontWeight: '700',
-    marginBottom: 16,
+    fontWeight: 'bold',
+    color: '#2E7D32', // deep green
+    marginBottom: 20,
     textAlign: 'center',
   },
   mealSection: {
-    marginBottom: 24,
+    marginBottom: 32,
   },
   mealTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '600',
+    color: '#1B5E20',
     marginBottom: 12,
   },
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: '#ffffff',
     padding: 10,
-    borderRadius: 12,
+    borderRadius: 16,
     marginRight: 12,
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
     elevation: 3,
   },
   image: {
     width: 80,
     height: 80,
-    borderRadius: 8,
+    borderRadius: 12,
     marginBottom: 6,
   },
   itemName: {
     fontSize: 14,
     fontWeight: '500',
+    color: '#333',
+    textAlign: 'center',
   },
   noItemText: {
     fontSize: 14,
     fontStyle: 'italic',
     color: '#999',
+    marginBottom: 8,
+  },
+  addButton: {
+    backgroundColor: '#4CAF50',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    alignSelf: 'flex-start',
+    marginTop: 10,
+  },
+  addButtonText: {
+    color: '#fff',
+    fontWeight: '600',
   },
 });
