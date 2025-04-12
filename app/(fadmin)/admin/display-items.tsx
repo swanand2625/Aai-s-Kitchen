@@ -1,9 +1,11 @@
+// File: app/(fadmin)/admin/display-items.tsx
+
 import { router, useLocalSearchParams, useNavigation } from 'expo-router';
 import { View, Text, StyleSheet, FlatList, Image, ActivityIndicator } from 'react-native';
 import { useLayoutEffect, useEffect, useState } from 'react';
 import Button from '@/components/Button';
 import { supabase } from '@/lib/supabase';
-import { useAuthStore } from '@/providers/useAuthStore';// Import auth store to get franchise_id
+import { useAuthStore } from '@/providers/useAuthStore'; // Get franchise_id
 
 export default function DisplayItemsScreen() {
   const { type } = useLocalSearchParams();
@@ -28,20 +30,20 @@ export default function DisplayItemsScreen() {
         console.error('Franchise ID is missing');
         return;
       }
-  
+
       setLoading(true);
-  
+
       const today = new Date();
       const formattedToday = today.toISOString().split('T')[0]; // 'YYYY-MM-DD'
-  
+
       const { data, error } = await supabase
         .from('meals')
         .select('*')
         .eq('meal_type', type)
         .eq('franchise_id', franchise_id)
-        .eq('date', formattedToday) // ✅ Filter only today's meals
-        .single(); // because only one meal entry per day
-  
+        .eq('date', formattedToday)
+        .single(); // Only one meal entry per day
+
       if (error) {
         console.error('Fetch error:', error.message);
         setItems([]);
@@ -49,13 +51,12 @@ export default function DisplayItemsScreen() {
         const menuItems = data?.menu?.items || [];
         setItems(menuItems);
       }
-  
+
       setLoading(false);
     };
-  
+
     if (type) fetchMeal();
   }, [type, franchise_id]);
-   // Re-fetch if type or franchise_id changes
 
   const hasItems = items.length > 0;
 
@@ -83,15 +84,28 @@ export default function DisplayItemsScreen() {
         )}
       </View>
 
-      <Button
-        text="Add Item"
-        onPress={() => {
-          router.push({
-            pathname: '/(fadmin)/admin/all-food-item',
-            params: { type },
-          });
-        }}
-      />
+      <View style={styles.buttonGroup}>
+        <Button
+          text="Add Item"
+          onPress={() => {
+            router.push({
+              pathname: '/(fadmin)/admin/all-food-item',
+              params: { type },
+            });
+          }}
+        />
+        <View style={{ marginTop: 10 }} />
+        <Button
+          text="Edit Menu"
+          onPress={() => {
+            router.push({
+              pathname: '/(fadmin)/admin/edit-menu',
+              params: { type },
+            });
+          }}
+          variant="secondary"
+        />
+      </View>
     </View>
   );
 }
@@ -137,5 +151,8 @@ const styles = StyleSheet.create({
   itemText: {
     fontSize: 16,
     textAlign: 'center',
+  },
+  buttonGroup: {
+    marginTop: 20,
   },
 });

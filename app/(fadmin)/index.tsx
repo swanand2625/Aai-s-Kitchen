@@ -1,9 +1,8 @@
-import { FlatList, StyleSheet, TouchableOpacity } from 'react-native';
+import React from 'react';
+import { FlatList, StyleSheet, TouchableOpacity, View, Text } from 'react-native';
 import { Ionicons, MaterialIcons, FontAwesome } from '@expo/vector-icons';
-import { Text, View } from '@/components/Themed';
 import { useNavigation } from 'expo-router';
 
-// Franchise admin dashboard items
 const adminDashboardItems = [
   {
     title: 'Total Customers',
@@ -23,7 +22,7 @@ const adminDashboardItems = [
   {
     title: 'Attendance',
     icon: <FontAwesome name="calendar-check-o" size={40} color="#FF6363" />,
-     navigateTo: 'admin/tmp2',
+    navigateTo: 'admin/tmp2',
   },
   {
     title: 'Feedback Book',
@@ -37,7 +36,7 @@ const adminDashboardItems = [
   },
   {
     title: 'Holiday Requests',
-    icon: <FontAwesome name="credit-card" size={40} color="#FFC107" />,
+    icon: <FontAwesome name="calendar" size={40} color="#6A1B9A" />,
     navigateTo: 'admin/holidayreq',
   },
 ];
@@ -45,14 +44,10 @@ const adminDashboardItems = [
 export default function FranchiseAdminDashboard() {
   const navigation = useNavigation();
 
-  // Rendering each dashboard item
   const renderItem = ({ item }: any) => (
     <TouchableOpacity
       style={styles.card}
-      onPress={() => {
-        // Navigate to appropriate screen
-        navigation.navigate(item.navigateTo as never);
-      }}
+      onPress={() => navigation.navigate(item.navigateTo as never)}
     >
       <View style={styles.icon}>{item.icon}</View>
       <Text style={styles.cardText}>{item.title}</Text>
@@ -65,7 +60,7 @@ export default function FranchiseAdminDashboard() {
       <FlatList
         data={adminDashboardItems}
         renderItem={renderItem}
-        keyExtractor={(item: { title: any }) => item.title}
+        keyExtractor={(item) => item.title}
         numColumns={2}
         contentContainerStyle={styles.grid}
       />
@@ -73,43 +68,45 @@ export default function FranchiseAdminDashboard() {
   );
 }
 
-// Styles for the dashboard
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingTop: 40,
-    backgroundColor: '#F4F6F8',
+    backgroundColor: '#F0FFF8', // same light green background
     paddingHorizontal: 16,
   },
   header: {
-    fontSize: 22,
-    fontWeight: '700',
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#1B5E20',
+    textAlign: 'center',
     marginBottom: 20,
-    color: '#333',
-    alignSelf: 'center',
   },
   grid: {
     justifyContent: 'center',
+    paddingBottom: 20,
   },
   card: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#ffffff',
     margin: 8,
-    borderRadius: 16,
+    borderRadius: 20,
     paddingVertical: 20,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 1, height: 3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 5,
+    shadowColor: '#2E7D32',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 6,
   },
   icon: {
     marginBottom: 10,
   },
   cardText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#333',
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#2E7D32',
+    marginTop: 5,
+    textAlign: 'center',
   },
 });

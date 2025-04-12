@@ -1,4 +1,4 @@
-import { View, Text, Button, StyleSheet, FlatList, Alert } from 'react-native';
+import { View, Text, Button, StyleSheet, FlatList, Alert, TouchableOpacity } from 'react-native';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/providers/useAuthStore';
@@ -99,7 +99,7 @@ export default function HolidayRequest() {
         const key = start.toISOString().split('T')[0];
         marks[key] = {
           selected: true,
-          color: '#228b22',
+          color: '#2e7d32',
           textColor: 'white'
         };
         start.setDate(start.getDate() + 1);
@@ -107,7 +107,7 @@ export default function HolidayRequest() {
     } else if (startDate) {
       marks[startDate] = {
         selected: true,
-        color: '#228b22',
+        color: '#2e7d32',
         textColor: 'white'
       };
     }
@@ -144,21 +144,27 @@ export default function HolidayRequest() {
         markedDates={markedDates()}
         markingType="period"
         theme={{
-          selectedDayBackgroundColor: '#228b22',
-          todayTextColor: 'red',
+          selectedDayBackgroundColor: '#2e7d32',
+          todayTextColor: '#d32f2f',
+          arrowColor: '#2e7d32',
+          textSectionTitleColor: '#2e7d32',
         }}
+        style={styles.calendar}
       />
 
-      <Button title="Request Holiday" onPress={requestHoliday} />
+      <TouchableOpacity style={styles.button} onPress={requestHoliday}>
+        <Text style={styles.buttonText}>Request Holiday</Text>
+      </TouchableOpacity>
 
       <Text style={styles.subtitle}>Past Requests</Text>
       <FlatList
         data={pastRequests}
         keyExtractor={(item) => item.id.toString()}
+        contentContainerStyle={{ paddingBottom: 40 }}
         renderItem={({ item }) => (
           <View style={styles.listItem}>
-            <Text>{item.start_date} → {item.end_date}</Text>
-            <Text>Status: {item.status}</Text>
+            <Text style={styles.requestText}>{item.start_date} → {item.end_date}</Text>
+            <Text style={styles.statusText}>Status: {item.status}</Text>
           </View>
         )}
       />
@@ -167,9 +173,67 @@ export default function HolidayRequest() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: '#fff' },
-  title: { fontSize: 22, fontWeight: 'bold', marginBottom: 10 },
-  subtitle: { fontSize: 18, fontWeight: '600', marginTop: 30, marginBottom: 10 },
-  label: { fontSize: 16, marginVertical: 10, color: '#555' },
-  listItem: { padding: 10, borderBottomColor: '#ccc', borderBottomWidth: 1 }
+  container: {
+    flex: 1,
+    padding: 20,
+    backgroundColor: '#f9fef9',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#2e7d32',
+    marginBottom: 12,
+  },
+  label: {
+    fontSize: 16,
+    marginBottom: 10,
+    color: '#555',
+  },
+  calendar: {
+    borderRadius: 12,
+    elevation: 2,
+    marginBottom: 20,
+    backgroundColor: '#fff',
+  },
+  button: {
+    backgroundColor: '#2e7d32',
+    padding: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginBottom: 24,
+    shadowColor: '#2e7d32',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  buttonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  subtitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#2e7d32',
+    marginBottom: 12,
+  },
+  listItem: {
+    backgroundColor: '#e8f5e9',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 10,
+    borderLeftWidth: 5,
+    borderLeftColor: '#2e7d32',
+  },
+  requestText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#333',
+  },
+  statusText: {
+    fontSize: 14,
+    color: '#555',
+    marginTop: 4,
+  },
 });
