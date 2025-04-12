@@ -1,3 +1,5 @@
+// tmp2.tsx
+
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert, Modal } from 'react-native';
 import { supabase } from '@/lib/supabase';
@@ -19,7 +21,7 @@ export default function AttendanceScreen() {
   });
   const [qrCodes, setQrCodes] = useState<Record<string, string>>({});
   const [qrVisible, setQrVisible] = useState<string | null>(null);
-  const [qrGenerated, setQrGenerated] = useState(false); // Initialize to false
+  const [qrGenerated, setQrGenerated] = useState(false);
 
   const fetchTotalAttendees = async () => {
     if (!franchiseId) return;
@@ -28,7 +30,7 @@ export default function AttendanceScreen() {
     const { data, error } = await supabase
       .from('attendance')
       .select('meal_type')
-      .eq('franchise_id', franchiseId) // Assuming you have franchise_id in the attendance table
+      .eq('franchise_id', franchiseId)
       .eq('date', formattedDate);
 
     if (error) {
@@ -46,8 +48,6 @@ export default function AttendanceScreen() {
   };
 
   const handleQR = async () => {
-    console.log('Hello'); // Debugging log
-
     if (!franchiseId) {
       Alert.alert('Error', 'Franchise ID not found');
       return;
@@ -55,7 +55,6 @@ export default function AttendanceScreen() {
 
     const formattedDate = selectedDate.format('YYYY-MM-DD');
 
-    // Check if QR codes were already generated for this date in Supabase
     const { data: existingQRCodes, error: fetchError } = await supabase
       .from('meal_qr_codes')
       .select('*')
@@ -75,7 +74,7 @@ export default function AttendanceScreen() {
           return acc;
         }, {})
       );
-      setQrGenerated(true); // Set to true only if existing codes are found
+      setQrGenerated(true);
       return;
     }
 
@@ -101,33 +100,24 @@ export default function AttendanceScreen() {
     } else {
       setQrCodes(generatedQRCodes);
       Alert.alert('Success', 'QR codes generated successfully!');
-
       await AsyncStorage.setItem('last_qr_generated_date', formattedDate);
-      setQrGenerated(true); // Set to true after successful generation
+      setQrGenerated(true);
     }
   };
 
-  // Check if QR was already generated today on mount (for initial visual state)
   useEffect(() => {
     const checkLastGeneratedDate = async () => {
       const lastGeneratedDate = await AsyncStorage.getItem('last_qr_generated_date');
       const today = moment().format('YYYY-MM-DD');
-      if (lastGeneratedDate === today) {
-        setQrGenerated(true);
-      } else {
-        setQrGenerated(false);
-      }
+      setQrGenerated(lastGeneratedDate === today);
     };
-
     checkLastGeneratedDate();
-  }, []); // Run only on mount
+  }, []);
 
-  // Fetch Total Attendees on date change
   useEffect(() => {
     fetchTotalAttendees();
   }, [selectedDate, franchiseId]);
 
-  // Fetch Meal QR Codes (you might still need this for displaying QR codes)
   useEffect(() => {
     if (!franchiseId) return;
 
@@ -151,12 +141,7 @@ export default function AttendanceScreen() {
         }
       });
       setQrCodes(qrCodeData);
-
-      if (data && data.length > 0) {
-        setQrGenerated(true);
-      } else {
-        setQrGenerated(false);
-      }
+      setQrGenerated(data && data.length > 0);
     };
 
     fetchQrCodes();
@@ -166,47 +151,48 @@ export default function AttendanceScreen() {
 
   return (
     <View style={styles.container}>
-
-      {/* Custom Horizontal Date Picker */}
+      {/* Date Picker */}
       <View style={styles.datePickerContainer}>
         {[...Array(7)].map((_, index) => {
-          const date = moment().subtract(3, 'days').add(index, 'days'); // 3 days before & 3 days after today
+          const date = moment().subtract(3, 'days').add(index, 'days');
+          const isSelected = selectedDate.isSame(date, 'day');
           return (
             <TouchableOpacity
               key={index}
-              style={[
-                styles.dateButton,
-                selectedDate.isSame(date, 'day') && styles.selectedDateButton,
-              ]}
+              style={[styles.dateButton, isSelected && styles.selectedDateButton]}
               onPress={() => setSelectedDate(date)}
             >
-              <Text style={styles.dateText}>{date.format('DD')}</Text>
-              <Text style={styles.dayText}>{date.format('ddd')}</Text>
+              <Text style={[styles.dateText, isSelected && styles.selectedDateText]}>
+                {date.format('DD')}
+              </Text>
+              <Text style={[styles.dayText, isSelected && styles.selectedDayText]}>
+                {date.format('ddd')}
+              </Text>
             </TouchableOpacity>
           );
         })}
       </View>
 
-      {/* Attendance Sections */}
+      {/* Attendance */}
       <View style={styles.attendanceContainer}>
         {['breakfast', 'lunch', 'dinner'].map((meal) => (
           <View key={meal} style={styles.attendanceCard}>
-            <Text style={styles.header}>{meal.toUpperCase()}</Text>
-            <Text style={styles.paragraph}>Total Attendees: {attendance[meal] ?? 0}</Text>
-
-            {/* Eye Icon to Show QR Code */}
+            <View>
+              <Text style={styles.header}>{meal.toUpperCase()}</Text>
+              <Text style={styles.paragraph}>Total Attendees: {attendance[meal] ?? 0}</Text>
+            </View>
             {qrCodes[meal] && (
               <TouchableOpacity onPress={() => setQrVisible(meal)}>
-                <MaterialCommunityIcons name="eye" size={24} color="#4B9CD3" />
+                <MaterialCommunityIcons name="eye" size={26} color="#2E7D32" />
               </TouchableOpacity>
             )}
           </View>
         ))}
       </View>
 
-      {/* QR Code Modal */}
+      {/* QR Modal */}
       {qrVisible && (
-        <Modal transparent={true} animationType="slide" visible={!!qrVisible}>
+        <Modal transparent animationType="slide" visible={!!qrVisible}>
           <View style={styles.modalContainer}>
             <View style={styles.modalContent}>
               <Text style={styles.header}>{qrVisible.toUpperCase()} QR Code</Text>
@@ -218,6 +204,7 @@ export default function AttendanceScreen() {
           </View>
         </Modal>
       )}
+
       <Button text={generateButtonText} onPress={handleQR} disabled={qrGenerated} />
     </View>
   );
@@ -227,48 +214,58 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: '#F4F6F8',
+    backgroundColor: '#FFFFFF',
   },
   attendanceContainer: {
     flex: 1,
   },
   attendanceCard: {
-    backgroundColor: '#fff',
+    backgroundColor: '#E8F5E9',
     padding: 16,
-    borderRadius: 10,
+    borderRadius: 16,
     marginBottom: 12,
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 3 },
+    shadowRadius: 4,
+    elevation: 3,
   },
   header: {
+    fontSize: 16,
     fontWeight: '700',
-    color: '#333',
+    color: '#2E7D32',
+    marginBottom: 4,
   },
   paragraph: {
-    color: '#555',
+    fontSize: 14,
+    color: '#4B4B4B',
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   modalContent: {
     backgroundColor: '#fff',
-    padding: 20,
-    borderRadius: 10,
+    padding: 24,
+    borderRadius: 16,
     alignItems: 'center',
   },
   closeButton: {
     marginTop: 20,
-    backgroundColor: '#4B9CD3',
-    padding: 10,
-    borderRadius: 5,
+    backgroundColor: '#4CAF50',
+    paddingVertical: 10,
+    paddingHorizontal: 24,
+    borderRadius: 8,
   },
   buttonText: {
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#fff',
+    fontSize: 16,
   },
   datePickerContainer: {
     flexDirection: 'row',
@@ -276,22 +273,29 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   dateButton: {
-    padding: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
     marginHorizontal: 5,
-    borderRadius: 8,
-    backgroundColor: '#E8F0FE',
+    borderRadius: 10,
+    backgroundColor: '#F1F8E9',
     alignItems: 'center',
   },
   selectedDateButton: {
-    backgroundColor: '#4B9CD3',
+    backgroundColor: '#4CAF50',
   },
   dateText: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
     color: '#333',
+  },
+  selectedDateText: {
+    color: '#fff',
   },
   dayText: {
     fontSize: 12,
-    color: '#555',
+    color: '#777',
+  },
+  selectedDayText: {
+    color: '#fff',
   },
 });

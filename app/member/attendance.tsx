@@ -6,8 +6,9 @@ import {
   Pressable,
   StyleSheet,
   ActivityIndicator,
+  Alert,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
 import {
   format,
@@ -33,6 +34,8 @@ const monthList = [
 const Attendance = () => {
   const router = useRouter();
   const today = format(new Date(), "EEEE, MMMM d, yyyy");
+  const todayDate = format(new Date(), "yyyy-MM-dd");
+  const params = useLocalSearchParams();
 
   const [attendanceData, setAttendanceData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,6 +61,25 @@ const Attendance = () => {
   useEffect(() => {
     if (userId) fetchAttendance();
   }, [userId, selectedMonthIndex]);
+
+  // Show success message and reload if redirected from QR scan
+  useEffect(() => {
+    if (params?.success === "true" && params?.mealType) {
+      Alert.alert(
+        "Attendance Marked",
+        `Your ${params.mealType} attendance was marked successfully.`,
+        [
+          {
+            text: "OK",
+            onPress: () => {
+              fetchAttendance();
+              router.replace("/member/attendance"); // Clean the params
+            },
+          },
+        ]
+      );
+    }
+  }, [params]);
 
   const fetchAttendance = async () => {
     setLoading(true);
@@ -108,8 +130,16 @@ const Attendance = () => {
     return entry.attended ? "#2ECC71" : "#E74C3C"; // green/red
   };
 
+  const isTodayMarked = (mealType: string) => {
+    return attendanceData.some(
+      (att) =>
+        att.date === todayDate &&
+        att.meal_type === mealType.toLowerCase() &&
+        att.attended
+    );
+  };
+
   const handleQRPress = (meal: string) => {
-    // ✅ safer param passing
     router.push(`/member/QRScanner?mealType=${meal}`);
   };
 
@@ -120,16 +150,26 @@ const Attendance = () => {
 
       {/* QR Meal Buttons */}
       <View style={styles.gridContainer}>
-        {mealButtons.map(({ name, icon }) => (
-          <Pressable
-            key={name}
-            onPress={() => handleQRPress(name)}
-            style={({ pressed }) => [styles.gridBox, pressed && styles.pressed]}
-          >
-            <MaterialIcons name={icon} size={32} color="#fff" />
-            <Text style={styles.gridText}>{name}</Text>
-          </Pressable>
-        ))}
+        {mealButtons.map(({ name, icon }) => {
+          const isMarked = isTodayMarked(name);
+          return (
+            <Pressable
+              key={name}
+              onPress={() => handleQRPress(name)}
+              disabled={isMarked}
+              style={({ pressed }) => [
+                styles.gridBox,
+                isMarked && { backgroundColor: "#bdc3c7" },
+                pressed && styles.pressed,
+              ]}
+            >
+              <MaterialIcons name={icon} size={32} color="#fff" />
+              <Text style={styles.gridText}>
+                {isMarked ? `${name} ✔️` : name}
+              </Text>
+            </Pressable>
+          );
+        })}
       </View>
 
       {/* Month Swiper */}
@@ -217,6 +257,7 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "bold",
     marginTop: 5,
+    textAlign: "center",
   },
   swiperSlide: {
     paddingVertical: 10,

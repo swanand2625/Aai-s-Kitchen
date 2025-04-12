@@ -52,7 +52,7 @@ export default function QRScanner() {
         .eq('qr_code', qrCodeValue)
         .eq('meal_type', mealType)
         .eq('date', today)
-        .eq('franchise_id',scannedFranchiseId);// Added franchise ID check
+        .eq('franchise_id',scannedFranchiseId); // Added franchise ID check
         //.single();
 
       if (qrError || !qrData) {

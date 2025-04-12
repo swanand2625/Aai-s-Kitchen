@@ -19,7 +19,7 @@ export default function TotalCustomersScreen() {
           .single();
 
         if (error || !data) {
-          Alert.alert('Error', 'No franchise assigned to this admin.');
+         // Alert.alert('Error', 'No franchise assigned to this admin.');
           return;
         }
         setFranchiseId(data.franchise_id);
