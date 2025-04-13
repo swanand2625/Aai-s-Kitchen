@@ -1,11 +1,9 @@
-// File: app/(fadmin)/admin/display-items.tsx
-
 import { router, useLocalSearchParams, useNavigation } from 'expo-router';
 import { View, Text, StyleSheet, FlatList, Image, ActivityIndicator } from 'react-native';
 import { useLayoutEffect, useEffect, useState } from 'react';
 import Button from '@/components/Button';
 import { supabase } from '@/lib/supabase';
-import { useAuthStore } from '@/providers/useAuthStore'; // Get franchise_id
+import { useAuthStore } from '@/providers/useAuthStore';
 
 export default function DisplayItemsScreen() {
   const { type } = useLocalSearchParams();
@@ -13,8 +11,7 @@ export default function DisplayItemsScreen() {
 
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-
-  const franchise_id = useAuthStore((state) => state.franchiseId); // Get franchise ID from auth store
+  const franchise_id = useAuthStore((state) => state.franchiseId);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -26,36 +23,66 @@ export default function DisplayItemsScreen() {
 
   useEffect(() => {
     const fetchMeal = async () => {
-      if (!franchise_id) {
-        console.error('Franchise ID is missing');
+      if (!franchise_id || !type) {
+        console.error('Franchise ID or type missing');
         return;
       }
 
       setLoading(true);
 
-      const today = new Date();
-      const formattedToday = today.toISOString().split('T')[0]; // 'YYYY-MM-DD'
+      const today = new Date().toISOString().split('T')[0];
 
       const { data, error } = await supabase
         .from('meals')
-        .select('*')
+        .select('menu')
         .eq('meal_type', type)
         .eq('franchise_id', franchise_id)
-        .eq('date', formattedToday)
-        .single(); // Only one meal entry per day
+        .eq('date', today);
 
       if (error) {
         console.error('Fetch error:', error.message);
         setItems([]);
+        setLoading(false);
+        return;
+      }
+
+      const selectedItems = data?.[0]?.menu?.items ?? [];
+
+      if (!Array.isArray(selectedItems)) {
+        console.warn('Unexpected menu.items structure:', selectedItems);
+        setItems([]);
+        setLoading(false);
+        return;
+      }
+
+      // ✅ Filter to valid objects with food_item_id
+      const validItems = selectedItems.filter(
+        (item: any) => typeof item === 'object' && item.food_item_id
+      );
+      const foodItemIds = validItems.map((item: any) => item.food_item_id);
+
+      if (foodItemIds.length === 0) {
+        setItems([]);
+        setLoading(false);
+        return;
+      }
+
+      const { data: foodItems, error: itemErr } = await supabase
+        .from('food_items')
+        .select('*')
+        .in('id', foodItemIds);
+
+      if (itemErr) {
+        console.error('Item fetch error:', itemErr.message);
+        setItems([]);
       } else {
-        const menuItems = data?.menu?.items || [];
-        setItems(menuItems);
+        setItems(foodItems || []);
       }
 
       setLoading(false);
     };
 
-    if (type) fetchMeal();
+    fetchMeal();
   }, [type, franchise_id]);
 
   const hasItems = items.length > 0;
@@ -71,10 +98,25 @@ export default function DisplayItemsScreen() {
           <FlatList
             data={items}
             numColumns={2}
-            keyExtractor={(item, index) => item.food_item_id || index.toString()}
+            keyExtractor={(item) => item.id.toString()}
             renderItem={({ item }) => (
               <View style={styles.itemCard}>
-                <Image source={{ uri: item.image_url }} style={styles.image} />
+                {item.image_url ? (
+                  <Image source={{ uri: item.image_url }} style={styles.image} />
+                ) : (
+                  <View
+                    style={[
+                      styles.image,
+                      {
+                        backgroundColor: '#ddd',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                      },
+                    ]}
+                  >
+                    <Text style={{ color: '#666' }}>No Image</Text>
+                  </View>
+                )}
                 <Text style={styles.itemText}>{item.name}</Text>
               </View>
             )}
@@ -147,6 +189,7 @@ const styles = StyleSheet.create({
     height: 100,
     borderRadius: 12,
     marginBottom: 8,
+    resizeMode: 'cover',
   },
   itemText: {
     fontSize: 16,
