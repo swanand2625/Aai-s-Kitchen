@@ -1,3 +1,5 @@
+// admin/display-items.tsx
+
 import { router, useLocalSearchParams, useNavigation } from 'expo-router';
 import { View, Text, StyleSheet, FlatList, Image, ActivityIndicator } from 'react-native';
 import { useLayoutEffect, useEffect, useState } from 'react';
@@ -28,9 +30,13 @@ export default function DisplayItemsScreen() {
         return;
       }
 
-      setLoading(true);
-
       const today = new Date().toISOString().split('T')[0];
+
+      console.log('Franchise ID:', franchise_id);
+      console.log('Meal Type:', type);
+      console.log("Today's Date:", today);
+
+      setLoading(true);
 
       const { data, error } = await supabase
         .from('meals')
@@ -39,6 +45,7 @@ export default function DisplayItemsScreen() {
         .eq('franchise_id', franchise_id)
         .eq('date', today);
 
+      console.log('Meals fetch result:', data);
       if (error) {
         console.error('Fetch error:', error.message);
         setItems([]);
@@ -61,6 +68,7 @@ export default function DisplayItemsScreen() {
       const foodItemIds = validItems.map((item: any) => item.food_item_id);
 
       if (foodItemIds.length === 0) {
+        console.warn('No valid food item IDs found.');
         setItems([]);
         setLoading(false);
         return;
@@ -75,7 +83,6 @@ export default function DisplayItemsScreen() {
         console.error('Item fetch error:', itemErr.message);
         setItems([]);
       } else {
-        // Add fallback id using food_item_id if id is missing
         const normalized = foodItems?.map((item) => ({
           ...item,
           id: item.id ?? item.food_item_id,
@@ -131,16 +138,20 @@ export default function DisplayItemsScreen() {
       </View>
 
       <View style={styles.buttonGroup}>
-        <Button
-          text="Add Item"
-          onPress={() => {
-            router.push({
-              pathname: '/(fadmin)/admin/all-food-item',
-              params: { type },
-            });
-          }}
-        />
-        <View style={{ marginTop: 10 }} />
+        {!hasItems && (
+          <>
+            <Button
+              text="Add Item"
+              onPress={() => {
+                router.push({
+                  pathname: '/(fadmin)/admin/all-food-item',
+                  params: { type },
+                });
+              }}
+            />
+            <View style={{ marginTop: 10 }} />
+          </>
+        )}
         <Button
           text="Edit Menu"
           onPress={() => {
