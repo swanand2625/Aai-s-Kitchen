@@ -11,11 +11,12 @@ import {
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/providers/useAuthStore';
-
+import { Link, useRouter } from 'expo-router';
 export default function Menu() {
   const userId = useAuthStore((state) => state.userId);
   const [mealsByType, setMealsByType] = useState<{ [key: string]: any[] }>({});
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     const fetchFranchiseIdAndMeals = async () => {
@@ -75,7 +76,7 @@ export default function Menu() {
   const mealTypesOrder = ['breakfast', 'lunch', 'dinner'];
 
   const handleAddExtraItem = (mealType: string) => {
-    Alert.alert(`Add extra item`, `You can add extra food item for ${mealType}`);
+    router.push('/member/addon'); ;
   };
 
   return (
