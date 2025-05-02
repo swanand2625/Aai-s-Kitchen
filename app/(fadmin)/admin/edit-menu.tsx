@@ -12,7 +12,7 @@ export default function EditMenuScreen() {
   const franchise_id = useAuthStore((state) => state.franchiseId);
 
   const [allItems, setAllItems] = useState<any[]>([]);
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [selectedItems, setSelectedItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const today = new Date().toISOString().split('T')[0];
 
@@ -28,7 +28,7 @@ export default function EditMenuScreen() {
       const { data: mealsData, error: mealError } = await supabase
         .from('meals')
         .select('menu')
-        .eq('meal_type', type.toString())
+        .eq('meal_type', type.toString().toLowerCase())
         .eq('franchise_id', franchise_id)
         .eq('date', today);
 
@@ -39,10 +39,8 @@ export default function EditMenuScreen() {
       setAllItems(allFoodItems || []);
 
       if (mealsData && mealsData.length > 0) {
-        const items = mealsData[0]?.menu?.items || [];
-        const ids = items.map((item: any) => item.food_item_id);
-        setSelectedIds(ids);
-        console.log('Pre-selected food_item_ids:', ids);
+        const existing = mealsData[0]?.menu?.items || [];
+        setSelectedItems(existing); // Already in correct format
       }
 
       setLoading(false);
@@ -51,10 +49,20 @@ export default function EditMenuScreen() {
     fetchData();
   }, [type, franchise_id]);
 
-  const toggleItem = (id: string) => {
-    setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((n) => n !== id) : [...prev, id]
-    );
+  const toggleItem = (item: any) => {
+    const exists = selectedItems.find((i) => i.food_item_id === item.food_item_id);
+    if (exists) {
+      setSelectedItems((prev) => prev.filter((i) => i.food_item_id !== item.food_item_id));
+    } else {
+      setSelectedItems((prev) => [
+        ...prev,
+        {
+          name: item.name,
+          image_url: item.image_url,
+          food_item_id: item.food_item_id,
+        },
+      ]);
+    }
   };
 
   const handleSave = async () => {
@@ -64,11 +72,12 @@ export default function EditMenuScreen() {
       .from('meals')
       .select('id')
       .eq('franchise_id', franchise_id)
-      .eq('meal_type', type.toString())
+      .eq('meal_type', type.toString().toLowerCase())
       .eq('date', today);
 
     const menuData = {
-      items: selectedIds.map((id) => ({ food_item_id: id })),
+      items: selectedItems,
+      franchise_id: franchise_id,
     };
 
     if (existingMeals && existingMeals.length > 0) {
@@ -82,7 +91,7 @@ export default function EditMenuScreen() {
       if (error) console.error('Update failed:', error.message);
     } else {
       const { error } = await supabase.from('meals').insert([{
-        meal_type: type.toString(),
+        meal_type: type.toString().toLowerCase(),
         franchise_id,
         date: today,
         menu: menuData,
@@ -108,35 +117,36 @@ export default function EditMenuScreen() {
 
       <FlatList
         data={allItems}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.food_item_id}
         numColumns={2}
         renderItem={({ item }) => {
-          const isChecked = selectedIds.includes(item.id);
+          const isChecked = selectedItems.some((i) => i.food_item_id === item.food_item_id);
 
           return (
             <View style={styles.itemCard}>
               {item.image_url ? (
                 <Image source={{ uri: item.image_url }} style={styles.image} />
               ) : (
-                <View style={[styles.image, styles.imagePlaceholder]}>
-                  <Text style={styles.imagePlaceholderText}>No Image</Text>
+                <View
+                  style={[styles.image, { backgroundColor: '#ddd', justifyContent: 'center', alignItems: 'center' }]}
+                >
+                  <Text>No Image</Text>
                 </View>
               )}
-              <Text style={styles.itemName}>{item.name}</Text>
-              <Text style={styles.itemInfo}>Calories: {item.calories}</Text>
-              <Text style={styles.itemInfo}>Price: ${item.price}</Text>
+              <Text style={styles.itemText}>{item.name}</Text>
               <Checkbox
                 value={isChecked}
-                onValueChange={() => toggleItem(item.id)}
+                onValueChange={() => toggleItem(item)}
                 style={styles.checkbox}
-                color={isChecked ? '#2E7D32' : undefined}
               />
             </View>
           );
         }}
       />
 
-      <Button text="Save Menu" onPress={handleSave} />
+      <View style={{ marginTop: 20 }}>
+        <Button text="Save Menu" onPress={handleSave} />
+      </View>
     </View>
   );
 }
@@ -144,16 +154,13 @@ export default function EditMenuScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F0FFF8',
-    paddingHorizontal: 16,
-    paddingTop: 24,
+    backgroundColor: '#fff',
+    padding: 16,
   },
   heading: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
-    color: '#1B5E20',
-    marginBottom: 16,
-    textAlign: 'center',
+    marginBottom: 12,
   },
   loaderContainer: {
     flex: 1,
@@ -162,11 +169,11 @@ const styles = StyleSheet.create({
   },
   itemCard: {
     flex: 1,
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 12,
     margin: 8,
     alignItems: 'center',
+    backgroundColor: '#f9f9f9',
+    borderRadius: 12,
+    padding: 10,
     elevation: 2,
   },
   image: {
@@ -176,28 +183,12 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     resizeMode: 'cover',
   },
-  imagePlaceholder: {
-    backgroundColor: '#ddd',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  imagePlaceholderText: {
-    color: '#666',
-    fontSize: 12,
-  },
-  itemName: {
+  itemText: {
     fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 4,
     textAlign: 'center',
-  },
-  itemInfo: {
-    fontSize: 14,
-    color: '#555',
+    marginBottom: 4,
   },
   checkbox: {
-    marginTop: 8,
-    width: 24,
-    height: 24,
+    marginTop: 6,
   },
 });

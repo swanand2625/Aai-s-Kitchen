@@ -33,21 +33,40 @@ export default function MenuScreen() {
     router.push(`/(fadmin)/admin/display-items?type=${mealType.toLowerCase()}` as any);
   };
 
+  const handlePollPress = () => {
+    router.push('/(fadmin)/admin/poll'); // Navigate to poll screen
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.headerText}>Select Meal Type</Text>
       <View style={styles.cardContainer}>
-        {mealCategories.map((meal) => (
-          <Pressable
-            key={meal}
-            style={({ pressed }) => [
-              styles.mealCard,
-              { opacity: pressed ? 0.7 : 1 },
-            ]}
-            onPress={() => handlePress(meal)}
-          >
-            <Text style={styles.mealText}>{meal}</Text>
-          </Pressable>
+        {mealCategories.map((meal, index) => (
+          <React.Fragment key={meal}>
+            <Pressable
+              style={({ pressed }) => [
+                styles.mealCard,
+                { opacity: pressed ? 0.7 : 1 },
+              ]}
+              onPress={() => handlePress(meal)}
+            >
+              <Text style={styles.mealText}>{meal}</Text>
+            </Pressable>
+
+            {/* Show Add Poll button after Dinner */}
+            {index === mealCategories.length - 1 && (
+              <Pressable
+                style={({ pressed }) => [
+                  styles.pollButton,
+                  { opacity: pressed ? 0.7 : 1 },
+                ]}
+                onPress={handlePollPress}
+              >
+                <FontAwesome name="calendar-plus-o" size={22} color="#ffffff" />
+                <Text style={styles.pollText}>Add Menu Poll</Text>
+              </Pressable>
+            )}
+          </React.Fragment>
         ))}
       </View>
     </View>
@@ -92,5 +111,20 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '600',
     color: '#2E7D32',
+  },
+  pollButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#388E3C',
+    paddingVertical: 14,
+    marginTop: 16,
+    borderRadius: 16,
+    gap: 10,
+  },
+  pollText: {
+    color: '#ffffff',
+    fontSize: 18,
+    fontWeight: '600',
   },
 });

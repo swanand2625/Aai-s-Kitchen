@@ -45,9 +45,19 @@ const dashboardItems: DashboardItem[] = [
     navigateTo: 'member/join_mess',
   },
   {
+    title: 'Guest Request',
+    icon: <Ionicons name="person" size={40} color="#00BFA6" />,
+    navigateTo: 'member/guestreq',
+  },
+  {
     title: 'Mark Attendance',
     icon: <MaterialIcons name="check-circle" size={40} color="#4CAF50" />,
     navigateTo: 'member/attendance',
+  },
+  {
+    title: 'Feedback Book',
+    icon: <MaterialIcons name="check-circle" size={40} color="#4CAF50" />,
+    navigateTo: 'member/feedback',
   },
 ];
 

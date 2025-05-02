@@ -38,12 +38,7 @@ const adminDashboardItems = [
     title: 'Holiday Requests',
     icon: <FontAwesome name="calendar" size={40} color="#6A1B9A" />,
     navigateTo: 'admin/holidayreq',
-  },
-  {
-    title: 'Edit Menu',
-    icon: <MaterialIcons name="edit" size={40} color="#1976D2" />,
-    navigateTo: 'admin/edit-menu',
-  },  
+  }, 
 ];
 
 export default function FranchiseAdminDashboard() {

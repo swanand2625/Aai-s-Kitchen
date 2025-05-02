@@ -5,6 +5,7 @@ import { Picker } from '@react-native-picker/picker';
 
 import 'react-native-url-polyfill/auto'; // Needed for Supabase in React Native
 import { supabase } from '@/lib/supabase';
+
 export default function AddFood() {
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
@@ -39,7 +40,7 @@ export default function AddFood() {
       const blob = await response.blob();
 
       const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('food_images') // Make sure this bucket exists
+        .from('food') // Correct bucket
         .upload(fileName, blob, {
           cacheControl: '3600',
           upsert: false,
@@ -49,18 +50,18 @@ export default function AddFood() {
 
       // 2. Get public URL
       const { data: publicUrlData } = supabase.storage
-        .from('food_images')
+        .from('food')
         .getPublicUrl(fileName);
 
       const imageUrl = publicUrlData.publicUrl;
 
-      // 3. Insert into food_items table
+      // 3. Insert into food_items table (was mistakenly written as 'food')
       const { error: insertError } = await supabase.from('food_items').insert([
         {
           name,
           category,
           price: parseFloat(price),
-          image_url: imageUrl, // make sure your table has image_url column
+          image_url: imageUrl,
         },
       ]);
 

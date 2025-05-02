@@ -7,16 +7,16 @@ import {
   ActivityIndicator,
   Keyboard,
   Alert,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { Picker } from '@react-native-picker/picker';
 import { supabase } from '@/lib/supabase';
 import Button from '@/components/Button';
-
 import { useAuthStore } from '@/providers/useAuthStore';
 import { router } from 'expo-router';
-
-
 
 export default function JoinMessScreen() {
   const [searchText, setSearchText] = useState('');
@@ -27,9 +27,6 @@ export default function JoinMessScreen() {
   const [loading, setLoading] = useState(false);
 
   const userId = useAuthStore((state) => state.userId);
-  useEffect(() => {
-    console.log('userId in Join Mess:', userId);
-  }, []);
 
   const fetchFranchises = async () => {
     setLoading(true);
@@ -94,86 +91,96 @@ export default function JoinMessScreen() {
       Alert.alert('Error', 'Failed to join the mess.');
     } else {
       Alert.alert('Success', `You have successfully joined "${selectedFranchise.name}"`);
-      router.push('/(user)')
+      router.push('/(user)');
     }
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.label}>Search by Address</Text>
-      <TextInput
-        value={searchText}
-        onChangeText={setSearchText}
-        placeholder="Start typing any part of address..."
-        style={styles.input}
-        onSubmitEditing={handleSearch}
-      />
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <View style={styles.container}>
+          <Text style={styles.label}>Search by Address</Text>
+          <TextInput
+            value={searchText}
+            onChangeText={setSearchText}
+            placeholder="Start typing any part of address..."
+            style={styles.input}
+            onSubmitEditing={handleSearch}
+          />
 
-      {loading ? (
-        <ActivityIndicator size="large" color="#000" />
-      ) : (
-        <MapView
-          style={styles.map}
-          initialRegion={{
-            latitude: filteredFranchises[0]?.latitude || 20.5937,
-            longitude: filteredFranchises[0]?.longitude || 78.9629,
-            latitudeDelta: 5,
-            longitudeDelta: 5,
-          }}
-        >
-          {filteredFranchises.map((franchise) => (
-            <Marker
-              key={franchise.id}
-              coordinate={{
-                latitude: franchise.latitude,
-                longitude: franchise.longitude,
+          {loading ? (
+            <ActivityIndicator size="large" color="#000" />
+          ) : (
+            <MapView
+              style={styles.map}
+              initialRegion={{
+                latitude: filteredFranchises[0]?.latitude || 20.5937,
+                longitude: filteredFranchises[0]?.longitude || 78.9629,
+                latitudeDelta: 5,
+                longitudeDelta: 5,
               }}
-              title={franchise.name}
-              description={`Address: ${franchise.address}\nContact: ${franchise.contact}`}
-              onPress={() => setSelectedFranchise(franchise)} // ✅ Set selected on tap
-            />
-          ))}
-        </MapView>
-      )}
+            >
+              {filteredFranchises.map((franchise) => (
+                <Marker
+                  key={franchise.id}
+                  coordinate={{
+                    latitude: franchise.latitude,
+                    longitude: franchise.longitude,
+                  }}
+                  title={franchise.name}
+                  description={`Address: ${franchise.address}\nContact: ${franchise.contact}`}
+                  onPress={() => setSelectedFranchise(franchise)}
+                />
+              ))}
+            </MapView>
+          )}
 
-      <Text style={styles.label}>Or Select a Place</Text>
-      <View style={styles.pickerContainer}>
-        <Picker
-          selectedValue={selectedPlace}
-          onValueChange={(itemValue) => {
-            setSelectedPlace(itemValue);
-            const matched = franchises.filter(
-              (f) => extractPlaceFromAddress(f.address) === itemValue
-            );
-            setFilteredFranchises(matched);
-            setSelectedFranchise(null); // reset selection
-          }}
-        >
-          <Picker.Item label="Select a place" value="" />
-          {allPlaces.map((place, index) => (
-            <Picker.Item key={`${place}-${index}`} label={place} value={place} />
-          ))}
-        </Picker>
-      </View>
+          <Text style={styles.label}>Or Select a Place</Text>
+          <View style={styles.pickerContainer}>
+            <Picker
+              selectedValue={selectedPlace}
+              onValueChange={(itemValue) => {
+                setSelectedPlace(itemValue);
+                const matched = franchises.filter(
+                  (f) => extractPlaceFromAddress(f.address) === itemValue
+                );
+                setFilteredFranchises(matched);
+                setSelectedFranchise(null);
+              }}
+            >
+              <Picker.Item label="Select a place" value="" />
+              {allPlaces.map((place, index) => (
+                <Picker.Item key={`${place}-${index}`} label={place} value={place} />
+              ))}
+            </Picker>
+          </View>
 
-      {selectedFranchise && (
-        <View style={styles.selectedInfo}>
-          <Text style={styles.label}>Selected Mess</Text>
-          <Text style={styles.selectedText}>{selectedFranchise.name}</Text>
-          <Text style={styles.selectedText}>{selectedFranchise.address}</Text>
+          {selectedFranchise && (
+            <View style={styles.selectedInfo}>
+              <Text style={styles.label}>Selected Mess</Text>
+              <Text style={styles.selectedText}>{selectedFranchise.name}</Text>
+              <Text style={styles.selectedText}>{selectedFranchise.address}</Text>
+            </View>
+          )}
+
+          <Button text="Join Mess" onPress={joinMess} />
         </View>
-      )}
-
-      <Button text="Join Mess" onPress={joinMess} />
-    </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
+  scrollContainer: {
+    paddingBottom: 40,
+  },
   container: {
     padding: 16,
-    flex: 1,
-    backgroundColor: '#f9fff9', // light greenish white
+    flexGrow: 1,
+    backgroundColor: '#f9fff9',
   },
   input: {
     borderWidth: 1,

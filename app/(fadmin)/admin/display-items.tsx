@@ -55,7 +55,6 @@ export default function DisplayItemsScreen() {
         return;
       }
 
-      // ✅ Filter to valid objects with food_item_id
       const validItems = selectedItems.filter(
         (item: any) => typeof item === 'object' && item.food_item_id
       );
@@ -70,13 +69,18 @@ export default function DisplayItemsScreen() {
       const { data: foodItems, error: itemErr } = await supabase
         .from('food_items')
         .select('*')
-        .in('id', foodItemIds);
+        .in('food_item_id', foodItemIds);
 
       if (itemErr) {
         console.error('Item fetch error:', itemErr.message);
         setItems([]);
       } else {
-        setItems(foodItems || []);
+        // Add fallback id using food_item_id if id is missing
+        const normalized = foodItems?.map((item) => ({
+          ...item,
+          id: item.id ?? item.food_item_id,
+        })) ?? [];
+        setItems(normalized);
       }
 
       setLoading(false);
@@ -98,7 +102,7 @@ export default function DisplayItemsScreen() {
           <FlatList
             data={items}
             numColumns={2}
-            keyExtractor={(item) => item.id.toString()}
+            keyExtractor={(item) => item.id?.toString() ?? Math.random().toString()}
             renderItem={({ item }) => (
               <View style={styles.itemCard}>
                 {item.image_url ? (

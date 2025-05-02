@@ -9,6 +9,7 @@ interface GuestMeal {
   meal_type: string;
   date: string;
   price: number;
+  no_of_person: number; // Added to reflect the number of persons
   mess_member_id: string;
   created_at: string;
 }
@@ -44,13 +45,10 @@ export default function ViewGuestRequestsScreen() {
     <View style={styles.card}>
       <Text style={styles.guestName}>{item.guest_name}</Text>
       <Text style={styles.detail}>Meal: {item.meal_type.toUpperCase()}</Text>
-      <Text style={styles.detail}>
-        Date: {new Date(item.date).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}
-      </Text>
+      <Text style={styles.detail}>Date: {new Date(item.date).toLocaleString()}</Text>
       <Text style={styles.detail}>Price: ₹{item.price.toFixed(2)}</Text>
-      <Text style={styles.detail}>
-        Submitted At: {new Date(item.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}
-      </Text>
+      <Text style={styles.detail}>Guest Count: {item.no_of_person}</Text>
+      <Text style={styles.detail}>Submitted At: {new Date(item.created_at).toLocaleString()}</Text>
     </View>
   );
 
@@ -61,9 +59,7 @@ export default function ViewGuestRequestsScreen() {
       {loading ? (
         <ActivityIndicator size="large" color="#4CAF50" style={{ marginTop: 30 }} />
       ) : guestMeals.length === 0 ? (
-        <Text style={{ textAlign: 'center', marginTop: 40, fontSize: 16 }}>
-          No guest requests found.
-        </Text>
+        <Text style={{ textAlign: 'center', marginTop: 40, fontSize: 16 }}>No guest requests found.</Text>
       ) : (
         <FlatList
           data={guestMeals}

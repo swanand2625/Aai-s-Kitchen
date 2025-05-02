@@ -11,13 +11,15 @@ export default function AllFoodItemsScreen() {
   const [selected, setSelected] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const { franchiseId } = useAuthStore();
-  console.log(franchiseId) // Get franchiseId from auth store
 
   useEffect(() => {
     const fetchItems = async () => {
       const { data, error } = await supabase.from('food_items').select('*');
-      if (error) console.error('Error fetching items:', error.message);
-      else setFoodItems(data || []);
+      if (error) {
+        console.error('Error fetching items:', error.message);
+      } else {
+        setFoodItems(data || []);
+      }
       setLoading(false);
     };
     fetchItems();
@@ -30,33 +32,30 @@ export default function AllFoodItemsScreen() {
   };
 
   const handleAdd = async () => {
-    // Filter selected food items
-    const selectedItems = foodItems.filter(item => selected.includes(item.id));
+    const selectedItems = foodItems.filter(item => selected.includes(item.food_item_id));
 
-    // Construct JSON structure for `menu`
     const menu = {
-      franchise_id: franchiseId, // Use actual franchise ID
+      franchise_id: franchiseId,
       items: selectedItems.map(item => ({
-        food_item_id: item.id,
+        food_item_id: item.food_item_id,
         name: item.name,
         image_url: item.image_url,
       })),
     };
 
-    // Insert into meals table with franchiseId
     const { error } = await supabase.from('meals').insert([
       {
         meal_type: type,
-        date: new Date().toISOString().split('T')[0], // today's date in YYYY-MM-DD
+        date: new Date().toISOString().split('T')[0],
         menu,
-        franchise_id: franchiseId, // Ensure it's added to the database
+        franchise_id: franchiseId,
       },
     ]);
 
     if (error) {
       console.error('Insert error:', error.message);
     } else {
-      router.back(); // Go back to display screen
+      router.back();
     }
   };
 
@@ -68,13 +67,13 @@ export default function AllFoodItemsScreen() {
 
       <FlatList
         data={foodItems}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.food_item_id}
         numColumns={2}
         renderItem={({ item }) => {
-          const isSelected = selected.includes(item.id);
+          const isSelected = selected.includes(item.food_item_id);
           return (
             <Pressable
-              onPress={() => toggleSelect(item.id)}
+              onPress={() => toggleSelect(item.food_item_id)}
               style={[styles.card, isSelected && styles.selectedCard]}
             >
               <Image source={{ uri: item.image_url }} style={styles.image} />

@@ -1,4 +1,13 @@
-import { View, Text, StyleSheet, FlatList, Image, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  Image,
+  ActivityIndicator,
+  TouchableOpacity,
+  Alert,
+} from 'react-native';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/providers/useAuthStore';
@@ -47,34 +56,10 @@ export default function Menu() {
         return;
       }
 
-      const allFoodItemIds = mealsData
-        .flatMap((meal) => meal.menu?.items || [])
-        .filter((item: any) => item && item.food_item_id)
-        .map((item: any) => item.food_item_id);
-
-      const uniqueFoodItemIds = Array.from(new Set(allFoodItemIds));
-
-      let foodItemsMap: { [id: string]: any } = {};
-      if (uniqueFoodItemIds.length > 0) {
-        const { data: foodItems, error: foodError } = await supabase
-          .from('food_items')
-          .select('*')
-          .in('id', uniqueFoodItemIds);
-
-        if (foodError) {
-          console.error('Error fetching food items:', foodError.message);
-        } else {
-          foodItemsMap = Object.fromEntries(foodItems.map((item) => [item.id, item]));
-        }
-      }
-
       const organizedMeals: { [key: string]: any[] } = {};
       mealsData.forEach((meal) => {
-        const type = meal.meal_type;
-        const items = (meal.menu?.items || [])
-          .map((item: any) => foodItemsMap[item.food_item_id])
-          .filter(Boolean); // remove undefined
-
+        const type = meal.meal_type?.toLowerCase();
+        const items = meal.menu?.items || [];
         if (items.length > 0) {
           organizedMeals[type] = items;
         }
@@ -110,12 +95,15 @@ export default function Menu() {
               <>
                 <FlatList
                   data={mealsByType[mealType]}
-                  keyExtractor={(item) => item.id}
+                  keyExtractor={(item) => item.food_item_id}
                   horizontal
                   showsHorizontalScrollIndicator={false}
                   renderItem={({ item }) => (
                     <View style={styles.card}>
-                      <Image source={{ uri: item.image_url }} style={styles.image} />
+                      <Image
+                        source={{ uri: item.image_url }}
+                        style={styles.image}
+                      />
                       <Text style={styles.itemName}>{item.name}</Text>
                     </View>
                   )}
@@ -128,7 +116,9 @@ export default function Menu() {
                 </TouchableOpacity>
               </>
             ) : (
-              <Text style={styles.noItemText}>No {mealType} menu available</Text>
+              <Text style={styles.noItemText}>
+                No {mealType} menu available
+              </Text>
             )}
           </View>
         ))
