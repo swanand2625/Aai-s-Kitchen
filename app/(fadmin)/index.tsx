@@ -56,7 +56,7 @@ export default function FranchiseAdminDashboard() {
 
   return (
     <View style={styles.container}>
-      {/* Header with Logo */}
+      {/* Header with Logo centered */}
       <View style={styles.headerContainer}>
         <Image
           source={require('../../assets/images/logo.jpg')} // Update the path if needed
@@ -88,8 +88,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   headerContainer: {
-    alignItems: 'flex-start',
-    marginBottom: 2,
+    alignItems: 'center', // Center the logo in the header
+    marginBottom: 20,
   },
   logo: {
     width: 120, // increase the width for a larger appearance

@@ -21,11 +21,11 @@ type Franchise = {
 };
 
 const dashboardItems: DashboardItem[] = [
-  {
-    title: 'Profile',
-    icon: <Ionicons name="person-circle" size={40} color="#4B9CD3" />,
-    navigateTo: 'member/profile',
-  },
+  // {
+  //   title: 'Profile',
+  //   icon: <Ionicons name="person-circle" size={40} color="#4B9CD3" />,
+  //   navigateTo: 'member/profile',
+  // },
   {
     title: "Today's Menu",
     icon: <MaterialIcons name="restaurant-menu" size={40} color="#FF8C42" />,
@@ -134,6 +134,14 @@ export default function TabOneScreen() {
       <View style={styles.logoContainer}>
         <Image source={logo} style={styles.logo} resizeMode="contain" />
       </View>
+
+      {/* Profile Icon in the Top-Right Corner */}
+      <TouchableOpacity
+        style={styles.profileIcon}
+        onPress={() => navigation.navigate('member/profile' as never)}
+      >
+        <Ionicons name="person-circle" size={40} color="#4B9CD3" />
+      </TouchableOpacity>
 
       <Text style={styles.header}>Mess Member Dashboard</Text>
 
@@ -246,5 +254,11 @@ const styles = StyleSheet.create({
   },
   icon: {
     marginBottom: 10,
+  },
+  profileIcon: {
+    position: 'absolute',
+    top: 40,
+    right: 16,
+    zIndex: 1,
   },
 });

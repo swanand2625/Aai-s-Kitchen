@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/providers/useAuthStore";
 import { FontAwesome5, MaterialIcons } from "@expo/vector-icons";
 import { TouchableOpacity } from "react-native";
+import { useNavigation } from "expo-router"; // Using expo-router for navigation
 
 type ProfileData = {
   name?: string;
@@ -18,12 +19,14 @@ export default function Profile() {
   const { userId } = useAuthStore();
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
+  const navigation = useNavigation(); // Initialize navigation
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         console.log("Fetching profile for userId:", userId);
 
+        // Fetch user data
         const { data: userData, error: userError } = await supabase
           .from("users")
           .select("name, email")
@@ -32,6 +35,7 @@ export default function Profile() {
 
         if (userError) console.warn("User Fetch Warning:", userError.message);
 
+        // Fetch mess member data
         const { data: memberData, error: memberError } = await supabase
           .from("mess_members")
           .select("*, franchise_id")
@@ -40,6 +44,7 @@ export default function Profile() {
 
         if (memberError) console.warn("Mess Member Fetch Warning:", memberError.message);
 
+        // Fetch franchise data
         const { data: franchiseData, error: franchiseError } = await supabase
           .from("franchises")
           .select("name")
@@ -48,6 +53,7 @@ export default function Profile() {
 
         if (franchiseError) console.warn("Franchise Fetch Warning:", franchiseError.message);
 
+        // Set profile data
         setProfileData({
           name: userData?.name || "Unknown",
           email: userData?.email || "NA",
@@ -66,6 +72,10 @@ export default function Profile() {
 
     fetchProfile();
   }, [userId]);
+
+  const handleJoinMess = () => {
+    navigation.navigate("member/join_mess"); // Navigate to the Join Mess screen
+  };
 
   if (loading) {
     return <ActivityIndicator size="large" color="#007AFF" style={styles.loader} />;
@@ -112,6 +122,13 @@ export default function Profile() {
           <Text style={styles.profileText}>{profileData?.planEnd}</Text>
         </View>
       </View>
+
+      {/* Show Join Mess Button only if the user is not already in a mess */}
+      {!profileData?.messName && (
+        <TouchableOpacity style={styles.joinMessButton} onPress={handleJoinMess}>
+          <Text style={styles.buttonText}>Join Mess</Text>
+        </TouchableOpacity>
+      )}
 
       <TouchableOpacity style={styles.button}>
         <Text style={styles.buttonText}>Edit Profile</Text>
@@ -172,6 +189,13 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "600",
     color: "#fff",
+  },
+  joinMessButton: {
+    marginTop: 20,
+    backgroundColor: "#FF8C42", // Using a different color for the button
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: "center",
   },
   loader: {
     flex: 1,
