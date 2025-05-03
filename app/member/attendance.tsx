@@ -7,6 +7,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
+  Image,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -145,6 +146,7 @@ const Attendance = () => {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
+      <Image source={require("../../assets/images/logo.jpg")} style={styles.logo} />
       {/* Date Display */}
       <Text style={styles.dateText}>{today}</Text>
 
@@ -224,6 +226,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     flexGrow: 1,
   },
+  logo: {
+    width: 120,
+    height: 50,
+    resizeMode: "contain",
+    alignSelf: "center",
+    marginBottom: 20,
+  },
   dateText: {
     fontSize: 18,
     fontWeight: "600",
@@ -242,8 +251,8 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     alignItems: "center",
     justifyContent: "center",
-    width: 100,
-    height: 100,
+    width: 120,
+    height: 120,
     elevation: 5,
     shadowColor: "#000",
     shadowOffset: { width: 2, height: 2 },
@@ -258,6 +267,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginTop: 5,
     textAlign: "center",
+    flexWrap: "wrap",  // Ensures no text overflow
   },
   swiperSlide: {
     paddingVertical: 10,

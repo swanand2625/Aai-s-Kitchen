@@ -1,4 +1,4 @@
-import { View, Text, Button, StyleSheet, FlatList, Alert, TouchableOpacity } from 'react-native';
+import { View, Text, Button, StyleSheet, FlatList, Alert, TouchableOpacity, Image } from 'react-native';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/providers/useAuthStore';
@@ -128,6 +128,8 @@ export default function HolidayRequest() {
 
   return (
     <View style={styles.container}>
+      <Image source={require('../../assets/images/logo.jpg')} style={styles.logo} />
+
       <Text style={styles.title}>Holiday Request</Text>
 
       <Text style={styles.label}>
@@ -178,16 +180,25 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: '#f9fef9',
   },
+  logo: {
+    width: 120,
+    height: 50,
+    resizeMode: 'contain',
+    alignSelf: 'center',
+    marginBottom: 10,
+  },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#2e7d32',
     marginBottom: 12,
+    textAlign: 'center',
   },
   label: {
     fontSize: 16,
     marginBottom: 10,
     color: '#555',
+    textAlign: 'center',
   },
   calendar: {
     borderRadius: 12,

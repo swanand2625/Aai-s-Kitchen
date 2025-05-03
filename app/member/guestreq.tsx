@@ -8,6 +8,7 @@ import {
   Alert,
   Platform,
   TouchableOpacity,
+  Image,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { supabase } from '@/lib/supabase';
@@ -93,6 +94,7 @@ export default function GuestRequestScreen() {
 
   return (
     <View style={styles.container}>
+      <Image source={require('../../assets/images/logo.jpg')} style={styles.logo} />
       <Text style={styles.heading}>Request Guest Meal</Text>
 
       <Text style={styles.label}>Guest Name</Text>
@@ -144,7 +146,8 @@ export default function GuestRequestScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff', padding: 16 },
-  heading: { fontSize: 22, fontWeight: 'bold', marginBottom: 20 },
+  logo: { width: 120, height: 50, resizeMode: 'contain', alignSelf: 'center', marginBottom: 10 },
+  heading: { fontSize: 22, fontWeight: 'bold', marginBottom: 20, textAlign: 'center' },
   label: { marginTop: 10, fontSize: 14, fontWeight: '600', marginBottom: 4 },
   input: {
     borderWidth: 1,

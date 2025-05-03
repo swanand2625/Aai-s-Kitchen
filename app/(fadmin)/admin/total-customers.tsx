@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, FlatList, StyleSheet, Alert } from 'react-native';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/providers/useAuthStore';
 
@@ -19,7 +19,6 @@ export default function TotalCustomersScreen() {
           .single();
 
         if (error || !data) {
-         // Alert.alert('Error', 'No franchise assigned to this admin.');
           return;
         }
         setFranchiseId(data.franchise_id);
@@ -60,13 +59,66 @@ export default function TotalCustomersScreen() {
     }
   }, [franchiseId]);
 
-  const renderItem = ({ item }: { item: any }) => (
-    <View style={styles.card}>
-      <Text style={styles.cardText}>User ID: {item.user_id}</Text>
-      <Text style={styles.cardText}>Status: {item.active ? 'Active' : 'Inactive'}</Text>
-      {/* Here, you can add a payment status check if applicable */}
-    </View>
-  );
+  const fetchCustomerProfile = async (userId: string) => {
+    try {
+      // Fetch user details
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('name, contact')
+        .eq('id', userId)
+        .single();
+
+      if (userError) console.warn("User Fetch Warning:", userError.message);
+
+      // Fetch mess member details
+      const { data: memberData, error: memberError } = await supabase
+        .from('mess_members')
+        .select('veg_pref')
+        .eq('user_id', userId)
+        .single();
+
+      if (memberError) console.warn("Mess Member Fetch Warning:", memberError.message);
+
+      return {
+        name: userData?.name || 'Unknown',
+        contact: userData?.contact || 'NA',
+        vegPref: memberData?.veg_pref ? 'Veg' : 'Non-Veg',
+      };
+    } catch (error) {
+      console.error("Error Fetching Profile:", error.message);
+      return {
+        name: 'Unknown',
+        contact: 'NA',
+        vegPref: 'Unknown',
+      };
+    }
+  };
+
+  const renderItem = ({ item }: { item: any }) => {
+    const [profile, setProfile] = useState<any>(null);
+
+    useEffect(() => {
+      const loadProfile = async () => {
+        const profileData = await fetchCustomerProfile(item.user_id);
+        setProfile(profileData);
+      };
+
+      loadProfile();
+    }, [item.user_id]);
+
+    if (!profile) {
+      return <Text>Loading...</Text>;
+    }
+
+    return (
+      <View style={styles.card}>
+        <Text style={styles.cardText}>Name: {profile.name}</Text>
+        <Text style={styles.cardText}>Contact: {profile.contact}</Text>
+        <Text style={styles.cardText}>Status: {item.active ? 'Active' : 'Inactive'}</Text>
+        <Text style={styles.cardText}>Preference: {profile.vegPref}</Text>
+      </View>
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -76,7 +128,7 @@ export default function TotalCustomersScreen() {
       <FlatList
         data={customers}
         renderItem={renderItem}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.list}
       />
     </View>

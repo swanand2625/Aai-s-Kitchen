@@ -1,14 +1,13 @@
-import { View, Text, StyleSheet, ActivityIndicator, Alert } from "react-native";
+import { View, Text, StyleSheet, ActivityIndicator, Alert, Image } from "react-native";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/providers/useAuthStore";
 import { FontAwesome5, MaterialIcons } from "@expo/vector-icons";
 import { TouchableOpacity } from "react-native";
 
-// Profile Data Type
 type ProfileData = {
   name?: string;
-  contact?: string;
+  email?: string;
   messName?: string;
   vegPref?: string;
   planStart?: string;
@@ -25,16 +24,14 @@ export default function Profile() {
       try {
         console.log("Fetching profile for userId:", userId);
 
-        // Fetch user details
         const { data: userData, error: userError } = await supabase
           .from("users")
-          .select("name")
+          .select("name, email")
           .eq("id", userId)
           .single();
 
         if (userError) console.warn("User Fetch Warning:", userError.message);
 
-        // Fetch mess member details
         const { data: memberData, error: memberError } = await supabase
           .from("mess_members")
           .select("*, franchise_id")
@@ -43,7 +40,6 @@ export default function Profile() {
 
         if (memberError) console.warn("Mess Member Fetch Warning:", memberError.message);
 
-        // Fetch franchise name
         const { data: franchiseData, error: franchiseError } = await supabase
           .from("franchises")
           .select("name")
@@ -52,16 +48,14 @@ export default function Profile() {
 
         if (franchiseError) console.warn("Franchise Fetch Warning:", franchiseError.message);
 
-        // Set Profile Data
         setProfileData({
           name: userData?.name || "Unknown",
-          contact: userData?.contact || "NA",
+          email: userData?.email || "NA",
           messName: franchiseData?.name || "Unknown Mess",
           vegPref: memberData?.veg_pref ? "Veg" : "Non-Veg",
           planStart: memberData?.plan_start || "Not Set",
           planEnd: memberData?.plan_end || "Not Set",
         });
-        
       } catch (error: any) {
         console.error("Error Fetching Profile:", error.message);
         Alert.alert("Error", error.message);
@@ -79,25 +73,44 @@ export default function Profile() {
 
   return (
     <View style={styles.container}>
+      <Image
+        source={require("../../assets/images/logo.jpg")}
+        style={styles.logo}
+        resizeMode="contain"
+      />
+
       <Text style={styles.title}>👤 Profile</Text>
+
       <View style={styles.card}>
-        <Text style={styles.label}><FontAwesome5 name="user" size={18} color="#444" /> Name:</Text>
-        <Text style={styles.value}>{profileData?.name}</Text>
-        
-        <Text style={styles.label}><MaterialIcons name="phone" size={18} color="#444" /> Contact:</Text>
-        <Text style={styles.value}>{profileData?.contact}</Text>
+        <View style={styles.profileRow}>
+          <FontAwesome5 name="user" size={20} color="#4CAF50" />
+          <Text style={styles.profileText}>{profileData?.name}</Text>
+        </View>
 
-        <Text style={styles.label}><FontAwesome5 name="utensils" size={18} color="#444" /> Mess:</Text>
-        <Text style={styles.value}>{profileData?.messName}</Text>
+        <View style={styles.profileRow}>
+          <MaterialIcons name="phone" size={20} color="#4CAF50" />
+          <Text style={styles.profileText}>{profileData?.email}</Text>
+        </View>
 
-        <Text style={styles.label}><FontAwesome5 name="leaf" size={18} color="#444" /> Preference:</Text>
-        <Text style={styles.value}>{profileData?.vegPref}</Text>
+        <View style={styles.profileRow}>
+          <FontAwesome5 name="utensils" size={20} color="#4CAF50" />
+          <Text style={styles.profileText}>{profileData?.messName}</Text>
+        </View>
 
-        <Text style={styles.label}><FontAwesome5 name="calendar-check" size={18} color="#444" /> Plan Start:</Text>
-        <Text style={styles.value}>{profileData?.planStart}</Text>
+        <View style={styles.profileRow}>
+          <FontAwesome5 name="leaf" size={20} color="#4CAF50" />
+          <Text style={styles.profileText}>{profileData?.vegPref}</Text>
+        </View>
 
-        <Text style={styles.label}><FontAwesome5 name="calendar-times" size={18} color="#444" /> Plan End:</Text>
-        <Text style={styles.value}>{profileData?.planEnd}</Text>
+        <View style={styles.profileRow}>
+          <FontAwesome5 name="calendar-check" size={20} color="#4CAF50" />
+          <Text style={styles.profileText}>{profileData?.planStart}</Text>
+        </View>
+
+        <View style={styles.profileRow}>
+          <FontAwesome5 name="calendar-times" size={20} color="#4CAF50" />
+          <Text style={styles.profileText}>{profileData?.planEnd}</Text>
+        </View>
       </View>
 
       <TouchableOpacity style={styles.button}>
@@ -112,7 +125,13 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
     backgroundColor: "#F9F9F9",
-    justifyContent: "center",
+    justifyContent: "flex-start",
+  },
+  logo: {
+    width: 140,
+    height: 80,
+    alignSelf: "center",
+    marginBottom: 20,
   },
   title: {
     fontSize: 28,
@@ -131,17 +150,16 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 4,
   },
-  label: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#666",
-    marginTop: 10,
+  profileRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
   },
-  value: {
+  profileText: {
     fontSize: 18,
     fontWeight: "500",
     color: "#333",
-    marginBottom: 8,
+    marginLeft: 10,
   },
   button: {
     marginTop: 20,

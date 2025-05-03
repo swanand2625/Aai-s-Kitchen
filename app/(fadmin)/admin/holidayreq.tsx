@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, FlatList, Button, Alert } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Button, Alert, Image } from 'react-native';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/providers/useAuthStore';
@@ -79,6 +79,15 @@ export default function FranchiseHolidayRequests() {
 
   return (
     <View style={styles.container}>
+      {/* Header with Logo */}
+      <View style={styles.headerContainer}>
+        <Image
+          source={require('../../../assets/images/logo.jpg')} // Path kept as requested
+          style={styles.logo}
+          resizeMode="contain"
+        />
+      </View>
+
       <Text style={styles.title}>Holiday Requests</Text>
       {loading ? (
         <Text>Loading...</Text>
@@ -109,6 +118,14 @@ const styles = StyleSheet.create({
   buttonRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 10
-  }
+    marginTop: 10,
+  },
+  headerContainer: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  logo: {
+    width: 120,
+    height: 70,
+  },
 });

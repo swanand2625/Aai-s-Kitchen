@@ -1,4 +1,4 @@
-import { View, Text, FlatList, StyleSheet, ActivityIndicator, ScrollView, Pressable } from 'react-native';
+import { View, Text, FlatList, StyleSheet, ActivityIndicator, ScrollView, Pressable, Image } from 'react-native';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/providers/useAuthStore';
@@ -145,6 +145,15 @@ export default function FranchiseFeedbackScreen() {
 
   return (
     <View style={styles.container}>
+      {/* Header with Logo */}
+      <View style={styles.headerContainer}>
+        <Image
+          source={require('../../../assets/images/logo.jpg')} // Path kept as requested
+          style={styles.logo}
+          resizeMode="contain"
+        />
+      </View>
+
       <Text style={styles.title}>Feedback Book</Text>
       {renderCalendar()}
 
@@ -169,6 +178,14 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
     backgroundColor: '#fff',
+  },
+  headerContainer: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  logo: {
+    width: 120,
+    height: 70,
   },
   title: {
     fontSize: 22,

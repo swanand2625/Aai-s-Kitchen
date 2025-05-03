@@ -1,7 +1,14 @@
-// tmp2.tsx
-
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, Modal } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  Modal,
+  Image,
+  ScrollView,
+} from 'react-native';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/providers/useAuthStore';
 import moment from 'moment';
@@ -54,6 +61,12 @@ export default function AttendanceScreen() {
     }
 
     const formattedDate = selectedDate.format('YYYY-MM-DD');
+    const today = moment().format('YYYY-MM-DD');
+
+    if (formattedDate > today) {
+      Alert.alert('Invalid Date', 'Cannot generate QR for future dates.');
+      return;
+    }
 
     const { data: existingQRCodes, error: fetchError } = await supabase
       .from('meal_qr_codes')
@@ -67,7 +80,7 @@ export default function AttendanceScreen() {
     }
 
     if (existingQRCodes && existingQRCodes.length > 0) {
-      Alert.alert('QR Code', 'QR codes have already been generated for today.');
+      Alert.alert('QR Code', 'QR codes have already been generated for this date.');
       setQrCodes(
         existingQRCodes.reduce((acc, qr) => {
           acc[qr.meal_type] = qr.qr_code;
@@ -150,7 +163,13 @@ export default function AttendanceScreen() {
   const generateButtonText = qrGenerated ? 'Already Generated' : 'Generate QR';
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container}>
+      {/* App Header */}
+      <View style={styles.headerContainer}>
+        <Image source={require('../../../assets/images/logo.jpg')} style={styles.logo} />
+        <Text style={styles.title}>Attendance & QR Manager</Text>
+      </View>
+
       {/* Date Picker */}
       <View style={styles.datePickerContainer}>
         {[...Array(7)].map((_, index) => {
@@ -173,7 +192,7 @@ export default function AttendanceScreen() {
         })}
       </View>
 
-      {/* Attendance */}
+      {/* Attendance Cards */}
       <View style={styles.attendanceContainer}>
         {['breakfast', 'lunch', 'dinner'].map((meal) => (
           <View key={meal} style={styles.attendanceCard}>
@@ -205,19 +224,72 @@ export default function AttendanceScreen() {
         </Modal>
       )}
 
-      <Button text={generateButtonText} onPress={handleQR} disabled={qrGenerated} />
-    </View>
+      {/* QR Button */}
+      <Button
+        text={generateButtonText}
+        onPress={handleQR}
+        disabled={qrGenerated || selectedDate.isAfter(moment(), 'day')}
+      />
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
     backgroundColor: '#FFFFFF',
+    padding: 16,
+  },
+  headerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    gap: 10,
+  },
+  logo: {
+    width: 40,
+    height: 40,
+    resizeMode: 'contain',
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#2E7D32',
+  },
+  datePickerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  dateButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    marginHorizontal: 5,
+    borderRadius: 10,
+    backgroundColor: '#F1F8E9',
+    alignItems: 'center',
+  },
+  selectedDateButton: {
+    backgroundColor: '#4CAF50',
+  },
+  dateText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  selectedDateText: {
+    color: '#fff',
+  },
+  dayText: {
+    fontSize: 12,
+    color: '#777',
+  },
+  selectedDayText: {
+    color: '#fff',
   },
   attendanceContainer: {
     flex: 1,
+    marginBottom: 20,
   },
   attendanceCard: {
     backgroundColor: '#E8F5E9',
@@ -266,36 +338,5 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#fff',
     fontSize: 16,
-  },
-  datePickerContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginBottom: 20,
-  },
-  dateButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    marginHorizontal: 5,
-    borderRadius: 10,
-    backgroundColor: '#F1F8E9',
-    alignItems: 'center',
-  },
-  selectedDateButton: {
-    backgroundColor: '#4CAF50',
-  },
-  dateText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-  },
-  selectedDateText: {
-    color: '#fff',
-  },
-  dayText: {
-    fontSize: 12,
-    color: '#777',
-  },
-  selectedDayText: {
-    color: '#fff',
   },
 });

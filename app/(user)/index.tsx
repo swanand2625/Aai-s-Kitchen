@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { FlatList, StyleSheet, TouchableOpacity, View, Text, Alert } from 'react-native';
+import { FlatList, StyleSheet, TouchableOpacity, View, Text, Alert, Image } from 'react-native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/providers/useAuthStore';
 import dayjs from 'dayjs';
+
+const logo = require('../../assets/images/logo.jpg'); // ✅ Logo path
 
 type DashboardItem = {
   title: string;
@@ -56,7 +58,7 @@ const dashboardItems: DashboardItem[] = [
   },
   {
     title: 'Feedback Book',
-    icon: <MaterialIcons name="check-circle" size={40} color="#4CAF50" />,
+    icon: <MaterialIcons name="event" size={40} color="#4CAF50" />,
     navigateTo: 'member/feedback',
   },
 ];
@@ -115,7 +117,6 @@ export default function TabOneScreen() {
   };
 
   const renderItem = ({ item }: { item: DashboardItem }) => {
-   
     return (
       <TouchableOpacity
         style={styles.card}
@@ -129,13 +130,16 @@ export default function TabOneScreen() {
 
   return (
     <View style={styles.container}>
+      {/* ✅ LOGO SECTION */}
+      <View style={styles.logoContainer}>
+        <Image source={logo} style={styles.logo} resizeMode="contain" />
+      </View>
+
       <Text style={styles.header}>Mess Member Dashboard</Text>
-      
+
       {franchise && (
         <View style={styles.franchiseInfo}>
           <Text style={styles.franchiseTitle}>{franchise.name}</Text>
-          {/* <Text style={styles.franchiseDetails}>{franchise.address}</Text>
-          <Text style={styles.franchiseDetails}>{franchise.contact}</Text> */}
 
           {!hasPlan && (
             <>
@@ -157,7 +161,7 @@ export default function TabOneScreen() {
         renderItem={renderItem}
         keyExtractor={(item) => item.navigateTo}
         numColumns={2}
-        contentContainerStyle={[styles.grid, { paddingBottom: 20 }]} // Ensure space for all items
+        contentContainerStyle={[styles.grid, { paddingBottom: 20 }]}
       />
     </View>
   );
@@ -167,13 +171,21 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingTop: 40,
-    backgroundColor: '#F0FFF8', // Light greenish background
+    backgroundColor: '#F0FFF8',
     paddingHorizontal: 16,
+  },
+  logoContainer: {
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  logo: {
+    height: 70,
+    width: 200,
   },
   header: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#1B5E20', // Dark green
+    color: '#1B5E20',
     textAlign: 'center',
     marginBottom: 20,
   },
@@ -196,13 +208,8 @@ const styles = StyleSheet.create({
     color: '#2E7D32',
     marginBottom: 4,
   },
-  franchiseDetails: {
-    fontSize: 14,
-    color: '#4E4E4E',
-    marginBottom: 4,
-  },
   buyPlanButton: {
-    backgroundColor: '#2E7D32', // Dark green button
+    backgroundColor: '#2E7D32',
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 20,
@@ -230,9 +237,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 8,
     elevation: 6,
-    transform: [{ scale: 1 }],
-    transitionProperty: 'transform',
-    transitionDuration: '0.3s',
   },
   cardText: {
     fontSize: 17,

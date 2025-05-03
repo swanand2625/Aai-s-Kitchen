@@ -1,5 +1,3 @@
-// admin/display-items.tsx
-
 import { router, useLocalSearchParams, useNavigation } from 'expo-router';
 import { View, Text, StyleSheet, FlatList, Image, ActivityIndicator } from 'react-native';
 import { useLayoutEffect, useEffect, useState } from 'react';
@@ -100,6 +98,7 @@ export default function DisplayItemsScreen() {
 
   return (
     <View style={styles.container}>
+      <Image source={require('../../../assets/images/logo.jpg')} style={styles.logo} />
       <Text style={styles.sectionTitle}>Selected for today</Text>
 
       <View style={styles.selectedContainer}>
@@ -173,9 +172,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     padding: 16,
   },
+  logo: {
+    width: 120,
+    height: 120,
+    resizeMode: 'contain',
+    alignSelf: 'center',
+    marginBottom: 20,
+  },
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
+    color: '#4CAF50', // Green color
     marginBottom: 12,
   },
   selectedContainer: {
@@ -186,7 +193,7 @@ const styles = StyleSheet.create({
   },
   noItemsText: {
     fontSize: 16,
-    color: '#6b7280',
+    color: '#4CAF50', // Green color
     textAlign: 'center',
     marginTop: 40,
   },
@@ -198,6 +205,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     elevation: 2,
     padding: 10,
+    borderWidth: 1,
+    borderColor: '#4CAF50', // Green border
   },
   image: {
     width: 100,
@@ -209,6 +218,7 @@ const styles = StyleSheet.create({
   itemText: {
     fontSize: 16,
     textAlign: 'center',
+    color: '#333', // Dark text for contrast
   },
   buttonGroup: {
     marginTop: 20,

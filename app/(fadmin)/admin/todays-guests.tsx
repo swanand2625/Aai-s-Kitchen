@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, Image } from 'react-native';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/providers/useAuthStore';
 
@@ -56,12 +56,19 @@ export default function ViewGuestRequestsScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.heading}>Guest Meal Requests</Text>
+      <View style={styles.header}>
+        <Image
+          source={require('../../../assets/images/logo.jpg')}
+          style={styles.logo}
+          resizeMode="contain"
+        />
+        <Text style={styles.title}>Guest Meal Requests</Text>
+      </View>
 
       {loading ? (
         <ActivityIndicator size="large" color="#4CAF50" style={{ marginTop: 30 }} />
       ) : guestMeals.length === 0 ? (
-        <Text style={{ textAlign: 'center', marginTop: 40, fontSize: 16 }}>
+        <Text style={styles.emptyText}>
           No guest requests found.
         </Text>
       ) : (
@@ -79,30 +86,50 @@ export default function ViewGuestRequestsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#F4F6F8',
     padding: 16,
   },
-  heading: {
-    fontSize: 22,
-    fontWeight: 'bold',
+  header: {
+    alignItems: 'center',
     marginBottom: 20,
-    textAlign: 'center',
+  },
+  logo: {
+    width: 100,
+    height: 60,
+    marginBottom: 6,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#388E3C',
   },
   card: {
-    backgroundColor: '#f1fdf4',
-    padding: 14,
+    backgroundColor: '#ffffff',
+    padding: 16,
     marginBottom: 12,
     borderRadius: 12,
     borderLeftWidth: 4,
     borderLeftColor: '#4CAF50',
+    shadowColor: '#000',
+    shadowOffset: { width: 1, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   guestName: {
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 6,
+    color: '#2E7D32',
   },
   detail: {
     fontSize: 14,
-    color: '#333',
+    color: '#444',
+  },
+  emptyText: {
+    textAlign: 'center',
+    marginTop: 40,
+    fontSize: 16,
+    color: '#888',
   },
 });

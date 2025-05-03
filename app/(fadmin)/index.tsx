@@ -1,5 +1,5 @@
 import React from 'react';
-import { FlatList, StyleSheet, TouchableOpacity, View, Text } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, FlatList } from 'react-native';
 import { Ionicons, MaterialIcons, FontAwesome } from '@expo/vector-icons';
 import { useNavigation } from 'expo-router';
 
@@ -38,7 +38,7 @@ const adminDashboardItems = [
     title: 'Holiday Requests',
     icon: <FontAwesome name="calendar" size={40} color="#6A1B9A" />,
     navigateTo: 'admin/holidayreq',
-  }, 
+  },
 ];
 
 export default function FranchiseAdminDashboard() {
@@ -56,7 +56,19 @@ export default function FranchiseAdminDashboard() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Franchise Admin Dashboard</Text>
+      {/* Header with Logo */}
+      <View style={styles.headerContainer}>
+        <Image
+          source={require('../../assets/images/logo.jpg')} // Update the path if needed
+          style={styles.logo}
+          resizeMode="contain"
+        />
+      </View>
+
+      {/* Centered Title */}
+      <Text style={styles.title}>Franchise Admin Dashboard</Text>
+
+      {/* Dashboard Grid */}
       <FlatList
         data={adminDashboardItems}
         renderItem={renderItem}
@@ -72,10 +84,18 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingTop: 40,
-    backgroundColor: '#F0FFF8', // same light green background
+    backgroundColor: '#F0FFF8', // light green background
     paddingHorizontal: 16,
   },
-  header: {
+  headerContainer: {
+    alignItems: 'flex-start',
+    marginBottom: 2,
+  },
+  logo: {
+    width: 120, // increase the width for a larger appearance
+    height: 70, // adjust height as needed
+  },
+  title: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#1B5E20',

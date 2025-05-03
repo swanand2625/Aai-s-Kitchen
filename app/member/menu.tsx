@@ -6,12 +6,14 @@ import {
   Image,
   ActivityIndicator,
   TouchableOpacity,
-  Alert,
 } from 'react-native';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/providers/useAuthStore';
-import { Link, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
+import Logo from '@/components/Logo'; // Assuming you have a shared Logo component or using Image directly
+import { Image as RNImage } from 'react-native';
+
 export default function Menu() {
   const userId = useAuthStore((state) => state.userId);
   const [mealsByType, setMealsByType] = useState<{ [key: string]: any[] }>({});
@@ -76,11 +78,16 @@ export default function Menu() {
   const mealTypesOrder = ['breakfast', 'lunch', 'dinner'];
 
   const handleAddExtraItem = (mealType: string) => {
-    router.push('/member/addon'); ;
+    router.push('/member/addon');
   };
 
   return (
     <View style={styles.container}>
+      <RNImage
+        source={require('../../assets/images/logo.jpg')}
+        style={styles.logo}
+        resizeMode="contain"
+      />
       <Text style={styles.title}>🍽 Today’s Menu</Text>
 
       {loading ? (
@@ -134,6 +141,12 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     paddingHorizontal: 16,
     backgroundColor: '#f9fff9',
+  },
+  logo: {
+    width: 130,
+    height: 60,
+    alignSelf: 'center',
+    marginBottom: 10,
   },
   title: {
     fontSize: 26,

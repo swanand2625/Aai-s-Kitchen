@@ -1,5 +1,16 @@
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Alert,
+  TouchableOpacity,
+  Modal,
+  Pressable,
+  Image,
+} from 'react-native';
+import * as Linking from 'expo-linking';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '@/providers/useAuthStore';
 
@@ -11,6 +22,7 @@ export default function Bills() {
   const [snacks, setSnacks] = useState<any[]>([]);
   const [addons, setAddons] = useState<any[]>([]);
   const [memberId, setMemberId] = useState<string | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
 
   const fetchAllBills = async () => {
     setLoading(true);
@@ -68,7 +80,25 @@ export default function Bills() {
     return baseAmount + guestTotal + snackTotal + addonTotal;
   };
 
-  if (loading) return <Text style={{ textAlign: 'center', marginTop: 40 }}>Loading bill...</Text>;
+  const handlePayment = async (method: string) => {
+    setModalVisible(false);
+
+    const amount = calculateTotal().toFixed(2);
+    const upiId = '9325044986@ybl';
+    const name = 'Swanand Mahabal';
+
+    const upiUrl = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(name)}&am=${amount}&cu=INR`;
+
+    const supported = await Linking.canOpenURL(upiUrl);
+    if (supported) {
+      await Linking.openURL(upiUrl);
+    } else {
+      Alert.alert('UPI App Not Found', 'Please install a UPI app like GPay or PhonePe.');
+    }
+  };
+
+  if (loading)
+    return <Text style={{ textAlign: 'center', marginTop: 40 }}>Loading bill...</Text>;
 
   const guestTotal = guestMeals.reduce((sum, g) => sum + (parseFloat(g.price) || 0), 0);
   const snackTotal = snacks.reduce((sum, s) => sum + (parseFloat(s.price) || 0), 0);
@@ -80,6 +110,8 @@ export default function Bills() {
 
   return (
     <ScrollView style={styles.container}>
+      <Image source={require('../../assets/images/logo.jpg')} style={styles.logo} />
+
       <Text style={styles.header}>🧾 Monthly Bill Receipt</Text>
 
       {/* Monthly Amount */}
@@ -136,10 +168,39 @@ export default function Bills() {
         </View>
       </View>
 
-      {/* Final Total */}
+      {/* Final Total and Pay Button */}
       <View style={[styles.card, styles.finalCard]}>
         <Text style={styles.finalText}>Total Due: ₹{calculateTotal().toFixed(2)}</Text>
+        <TouchableOpacity style={styles.payButton} onPress={() => setModalVisible(true)}>
+          <Text style={styles.payText}>Pay Due Amount</Text>
+        </TouchableOpacity>
       </View>
+
+      {/* Payment Options Modal */}
+      <Modal
+        visible={modalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>Choose Payment Option</Text>
+            <Pressable style={styles.optionButton} onPress={() => handlePayment('PhonePe')}>
+              <Text style={styles.optionText}>📱 PhonePe</Text>
+            </Pressable>
+            <Pressable style={styles.optionButton} onPress={() => handlePayment('GPay')}>
+              <Text style={styles.optionText}>💸 Google Pay</Text>
+            </Pressable>
+            <Pressable style={styles.optionButton} onPress={() => handlePayment('Other')}>
+              <Text style={styles.optionText}>🏦 Other UPI App</Text>
+            </Pressable>
+            <Pressable onPress={() => setModalVisible(false)}>
+              <Text style={{ color: 'red', marginTop: 12, textAlign: 'center' }}>Cancel</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -149,6 +210,13 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
     backgroundColor: '#F4F9F4',
+  },
+  logo: {
+    width: 140,
+    height: 50,
+    resizeMode: 'contain',
+    alignSelf: 'center',
+    marginBottom: 16,
   },
   header: {
     fontSize: 24,
@@ -189,17 +257,60 @@ const styles = StyleSheet.create({
   },
   finalCard: {
     backgroundColor: '#D1FAE5',
+    alignItems: 'center',
   },
   finalText: {
     fontSize: 18,
     fontWeight: '700',
     color: '#065F46',
-    textAlign: 'center',
+    marginBottom: 12,
+  },
+  payButton: {
+    backgroundColor: '#10B981',
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  payText: {
+    color: 'white',
+    fontWeight: '600',
+    fontSize: 16,
   },
   empty: {
     textAlign: 'center',
     fontStyle: 'italic',
     color: '#777',
     marginTop: 4,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    width: '80%',
+    backgroundColor: 'white',
+    padding: 20,
+    borderRadius: 12,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  optionButton: {
+    backgroundColor: '#F0FDF4',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#10B981',
+  },
+  optionText: {
+    fontSize: 16,
+    color: '#065F46',
+    textAlign: 'center',
   },
 });

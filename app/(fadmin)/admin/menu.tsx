@@ -1,5 +1,5 @@
 import { useNavigation } from 'expo-router';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Image } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import React, { useLayoutEffect } from 'react';
 import { Link, useRouter } from 'expo-router';
@@ -34,12 +34,20 @@ export default function MenuScreen() {
   };
 
   const handlePollPress = () => {
-    router.push('/(fadmin)/admin/poll'); // Navigate to poll screen
+    router.push('/(fadmin)/admin/poll');
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.headerText}>Select Meal Type</Text>
+      <View style={styles.header}>
+        <Image
+          source={require('../../../assets/images/logo.jpg')}
+          style={styles.logo}
+          resizeMode="contain"
+        />
+        <Text style={styles.headerText}>Select Meal Type</Text>
+      </View>
+
       <View style={styles.cardContainer}>
         {mealCategories.map((meal, index) => (
           <React.Fragment key={meal}>
@@ -53,7 +61,6 @@ export default function MenuScreen() {
               <Text style={styles.mealText}>{meal}</Text>
             </Pressable>
 
-            {/* Show Add Poll button after Dinner */}
             {index === mealCategories.length - 1 && (
               <Pressable
                 style={({ pressed }) => [
@@ -80,15 +87,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 32,
   },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 24,
+    gap: 12,
+  },
+  logo: {
+    width: 50,
+    height: 50,
+  },
   headerIcon: {
     marginRight: 16,
   },
   headerText: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: 'bold',
     color: '#1B5E20',
-    textAlign: 'center',
-    marginBottom: 24,
   },
   cardContainer: {
     flexDirection: 'column',

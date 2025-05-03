@@ -105,6 +105,15 @@ export default function AddFood() {
 
   return (
     <View style={styles.container}>
+      <View style={styles.headerContainer}>
+        <Image
+          source={require('../assets/images/logo.jpg')} // Updated logo path
+          style={styles.logo}
+          resizeMode="contain"
+        />
+      </View>
+
+      <Text style={styles.title}>Add New Food Item</Text>
       <Text style={styles.label}>Food Name</Text>
       <TextInput
         value={name}
@@ -171,12 +180,28 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#fff',
+  },
+  headerContainer: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  logo: {
+    width: 120,
+    height: 70,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginBottom: 24,
+    textAlign: 'center',
+    color: '#228b22', // Green color for title
   },
   label: {
     fontSize: 16,
     marginBottom: 6,
     fontWeight: '500',
+    color: '#228b22', // Green color for labels
   },
   input: {
     borderWidth: 1,
@@ -198,7 +223,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   submitButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#228b22', // Green background for submit button
     paddingVertical: 14,
     borderRadius: 8,
     alignItems: 'center',

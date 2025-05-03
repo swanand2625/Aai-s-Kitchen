@@ -10,6 +10,7 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Image,
 } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { Picker } from '@react-native-picker/picker';
@@ -102,6 +103,11 @@ export default function JoinMessScreen() {
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.container}>
+          {/* Logo */}
+          <View style={styles.logoContainer}>
+            <Image source={require('../../assets/images/logo.jpg')} style={styles.logo} />
+          </View>
+
           <Text style={styles.label}>Search by Address</Text>
           <TextInput
             value={searchText}
@@ -112,7 +118,7 @@ export default function JoinMessScreen() {
           />
 
           {loading ? (
-            <ActivityIndicator size="large" color="#000" />
+            <ActivityIndicator size="large" color="#66BB6A" />
           ) : (
             <MapView
               style={styles.map}
@@ -182,9 +188,18 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     backgroundColor: '#f9fff9',
   },
+  logoContainer: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  logo: {
+    width: 120,
+    height: 120,
+    resizeMode: 'contain',
+  },
   input: {
     borderWidth: 1,
-    borderColor: '#A5D6A7',
+    borderColor: '#66BB6A', // Green color
     backgroundColor: '#ffffff',
     padding: 12,
     borderRadius: 12,
@@ -199,7 +214,7 @@ const styles = StyleSheet.create({
     height: 250,
     borderRadius: 16,
     marginVertical: 16,
-    borderColor: '#AED581',
+    borderColor: '#66BB6A', // Green border color
     borderWidth: 1,
     overflow: 'hidden',
   },
@@ -207,11 +222,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 6,
-    color: '#2E7D32',
+    color: '#66BB6A', // Green text color
   },
   pickerContainer: {
     borderWidth: 1,
-    borderColor: '#A5D6A7',
+    borderColor: '#66BB6A', // Green border color
     borderRadius: 12,
     overflow: 'hidden',
     marginBottom: 20,
@@ -225,14 +240,14 @@ const styles = StyleSheet.create({
   selectedInfo: {
     marginVertical: 16,
     padding: 14,
-    backgroundColor: '#E8F5E9',
+    backgroundColor: '#E8F5E9', // Light green background
     borderRadius: 12,
     borderLeftWidth: 4,
-    borderLeftColor: '#66BB6A',
+    borderLeftColor: '#66BB6A', // Green border color
   },
   selectedText: {
     fontSize: 15,
-    color: '#2E7D32',
+    color: '#66BB6A', // Green text color
     marginTop: 6,
   },
 });
